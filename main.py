@@ -30,34 +30,50 @@ class AuthContentScraper:
         return logging.getLogger(__name__)
 
     def run_scraping_session(self) -> ScrapingResult:
-        """Run a complete scraping and processing session."""
+        """Run a complete scraping and processing session with progress tracking."""
         session_id = str(uuid.uuid4())[:8]
         self.logger.info(f"Starting scraping session {session_id}")
+        
+        print("🚀 Starting Authentication Content Intelligence Session")
+        print("=" * 60)
+        print(f"Session ID: {session_id}")
+        print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print()
 
         # Scrape content from all sources
         all_scraped_content = []
         sources_scraped = []
 
-        for scraper in self.scrapers:
+        print("📡 Data Collection Phase")
+        print("-" * 30)
+        
+        for i, scraper in enumerate(self.scrapers, 1):
             try:
                 with scraper:
-                    self.logger.info(f"Scraping {scraper.get_source_type().value}")
+                    source_name = scraper.get_source_type().value
+                    print(f"[{i}/{len(self.scrapers)}] Scraping {source_name}...")
+                    
                     content = scraper.scrape_recent_content()
                     all_scraped_content.extend(content)
                     sources_scraped.append(scraper.get_source_type())
-                    self.logger.info(f"Found {len(content)} items from {scraper.get_source_type().value}")
+                    
+                    print(f"   ✅ Found {len(content)} items from {source_name}")
             except Exception as e:
+                print(f"   ❌ Error with {scraper.get_source_type().value}: {e}")
                 self.logger.error(f"Error with scraper {scraper.get_source_type()}: {e}")
 
-        self.logger.info(f"Total scraped items: {len(all_scraped_content)}")
+        print(f"\n📊 Collection Summary: {len(all_scraped_content)} total items scraped")
+        
+        if not all_scraped_content:
+            print("⚠️  No content found. Check time window and keywords.")
+            return self._create_empty_result(session_id, sources_scraped)
 
         # Process content with LLM
-        self.logger.info("Processing content with LLM")
+        print(f"\n🧠 AI Analysis Phase")
+        print("-" * 30)
         processed_content = self.llm_processor.process_content_batch(all_scraped_content)
-        self.logger.info(f"Processed {len(processed_content)} items")
 
         # Generate overall summary
-        self.logger.info("Generating overall summary")
         summary_data = self.llm_processor.generate_overall_summary(processed_content)
 
         # Create final result
@@ -71,40 +87,67 @@ class AuthContentScraper:
             top_trends=summary_data.get('top_trends', [])
         )
 
-        self.logger.info(f"Session {session_id} completed successfully")
+        print(f"\n🎉 Session {session_id} completed successfully!")
+        print(f"📈 Performance: {len(all_scraped_content)} scraped → {len(processed_content)} analyzed")
         return result
 
+    def _create_empty_result(self, session_id: str, sources_scraped: List[SourceType]) -> ScrapingResult:
+        """Create empty result when no content is found."""
+        return ScrapingResult(
+            session_id=session_id,
+            timestamp=datetime.now(),
+            total_items=0,
+            sources_scraped=sources_scraped,
+            processed_content=[],
+            overall_summary="No relevant authentication content found in the specified time window.",
+            top_trends=[]
+        )
+
     def print_results(self, result: ScrapingResult):
-        """Print formatted results to console."""
+        """Print formatted results to console with enhanced formatting."""
+        print("\n" + "=" * 80)
+        print(f"🎯 AUTHENTICATION INTELLIGENCE REPORT - Session {result.session_id}")
         print("=" * 80)
-        print(f"AUTH CONTENT SCRAPING RESULTS - Session {result.session_id}")
-        print("=" * 80)
-        print(f"Timestamp: {result.timestamp}")
-        print(f"Total Items Found: {result.total_items}")
-        print(f"Sources: {', '.join([s.value for s in result.sources_scraped])}")
-        print(f"Processed Items: {len(result.processed_content)}")
+        print(f"📅 Timestamp: {result.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"📊 Data Pipeline: {result.total_items} items → {len(result.processed_content)} analyzed")
+        print(f"🔍 Sources: {', '.join([s.value for s in result.sources_scraped])}")
+        
+        if not result.processed_content:
+            print("\n⚠️  No high-relevance content found in this session.")
+            return
+        
+        # Performance metrics
+        processing_efficiency = (len(result.processed_content) / result.total_items * 100) if result.total_items > 0 else 0
+        print(f"⚡ Processing Efficiency: {processing_efficiency:.1f}% (smart filtering)")
         print()
 
-        print("OVERALL SUMMARY:")
+        print("📋 EXECUTIVE SUMMARY")
         print("-" * 40)
         print(result.overall_summary)
         print()
 
-        print("TOP TRENDS:")
+        print("📈 TRENDING TOPICS")
         print("-" * 40)
-        for i, trend in enumerate(result.top_trends, 1):
-            print(f"{i}. {trend}")
+        for i, trend in enumerate(result.top_trends[:7], 1):
+            print(f"{i:2d}. {trend}")
         print()
 
-        print("DETAILED FINDINGS:")
+        print("🔥 HIGH-VALUE OPPORTUNITIES")
         print("-" * 40)
-        for i, content in enumerate(result.processed_content[:5], 1):  # Show top 5
-            print(f"{i}. {content.original.title}")
-            print(f"   Source: {content.original.source.value}")
-            print(f"   Relevance: {content.relevance_score:.2f}")
-            print(f"   Urgency: {content.urgency_level}")
-            print(f"   Summary: {content.summary[:150]}...")
-            print(f"   URL: {content.original.url}")
+        
+        # Sort by relevance and show top items
+        top_items = sorted(result.processed_content, key=lambda x: x.relevance_score, reverse=True)[:8]
+        
+        for i, content in enumerate(top_items, 1):
+            urgency_emoji = {"high": "🚨", "medium": "⚡", "low": "📝"}.get(content.urgency_level, "📝")
+            relevance_bar = "█" * int(content.relevance_score * 10) + "░" * (10 - int(content.relevance_score * 10))
+            
+            print(f"{i:2d}. {urgency_emoji} {content.original.title[:65]}...")
+            print(f"    🎯 Relevance: [{relevance_bar}] {content.relevance_score:.2f}")
+            print(f"    📍 Source: {content.original.source.value} | 👤 {content.original.author}")
+            print(f"    🏷️  Topics: {', '.join(content.key_topics[:4])}")
+            print(f"    💡 {content.summary[:120]}...")
+            print(f"    🔗 {content.original.url}")
             print()
 
 def main():

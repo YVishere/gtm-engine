@@ -5,31 +5,187 @@ import logging
 from typing import List, Dict, Any
 import requests
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 from models import ScrapedContent, ProcessedContent, ScrapingResult
 from config import Config
 
 class LLMProcessor:
-    """Process scraped content using Ollama LLM."""
+    """Process scraped content using Ollama LLM with smart batching and progress tracking."""
 
     def __init__(self):
         self.config = Config()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ollama_url = f"{self.config.OLLAMA_HOST}/api/generate"
+        
+        # Smart batching configuration
+        self.BATCH_SIZE = 10  # Process items in batches for better progress tracking
+        self.MAX_PARALLEL_REQUESTS = 3  # Limit concurrent API calls
+        self.RELEVANCE_THRESHOLD = 0.3  # Lower threshold to see more results (was 0.7)
+        self.MAX_ITEMS_TO_PROCESS = 100  # Cap for production performance
 
     def process_content_batch(self, contents: List[ScrapedContent]) -> List[ProcessedContent]:
-        """Process a batch of scraped content."""
-        processed_contents = []
-
-        for content in contents:
-            try:
-                processed = self._process_single_content(content)
-                if processed:
-                    processed_contents.append(processed)
-            except Exception as e:
-                self.logger.error(f"Error processing content {content.url}: {e}")
-
+        """Process a batch of scraped content with smart filtering and progress tracking."""
+        self.logger.info(f"Starting processing of {len(contents)} items")
+        
+        # Step 1: Smart pre-filtering using keyword density
+        filtered_contents = self._smart_prefilter(contents)
+        self.logger.info(f"Pre-filtered to {len(filtered_contents)} high-potential items")
+        
+        # Step 2: Quick relevance scoring for all items
+        quick_scored = self._quick_relevance_batch(filtered_contents)
+        
+        # Step 3: Sort by relevance and limit for deep processing
+        high_relevance = [item for item in quick_scored if item['relevance'] >= self.RELEVANCE_THRESHOLD]
+        high_relevance.sort(key=lambda x: x['relevance'], reverse=True)
+        
+        # Limit processing for performance
+        items_to_process = high_relevance[:self.MAX_ITEMS_TO_PROCESS]
+        self.logger.info(f"Selected {len(items_to_process)} items for deep LLM analysis")
+        
+        # Step 4: Deep LLM processing with progress bar
+        processed_contents = self._deep_process_with_progress(items_to_process)
+        
+        self.logger.info(f"Successfully processed {len(processed_contents)} items")
         return processed_contents
+
+    def _smart_prefilter(self, contents: List[ScrapedContent]) -> List[ScrapedContent]:
+        """Smart pre-filtering based on keyword density and metadata."""
+        filtered = []
+        
+        for content in contents:
+            # Calculate keyword density
+            text = f"{content.title} {content.content}".lower()
+            keyword_hits = sum(1 for keyword in self.config.AUTH_KEYWORDS if keyword in text)
+            
+            # Score based on multiple factors
+            score = 0
+            score += keyword_hits * 10  # Keyword density
+            score += min(content.score, 50)  # Reddit/SO score (capped)
+            score += min(content.comments_count, 20)  # Engagement
+            
+            # Quality filters
+            if len(content.title) < 10:  # Too short
+                score -= 20
+            if len(content.content) < 50:  # No substantial content
+                score -= 10
+            
+            # Keep items with reasonable potential
+            if score >= 15:
+                filtered.append(content)
+        
+        return filtered
+
+    def _quick_relevance_batch(self, contents: List[ScrapedContent]) -> List[Dict]:
+        """Quick relevance scoring using simple heuristics."""
+        scored_items = []
+        
+        print(f"📊 Quick relevance scoring for {len(contents)} items...")
+        
+        for i, content in enumerate(contents):
+            if i % 50 == 0:  # Progress every 50 items
+                print(f"   Analyzed {i}/{len(contents)} items", end='\r')
+            
+            relevance = self._calculate_quick_relevance(content)
+            scored_items.append({
+                'content': content,
+                'relevance': relevance
+            })
+        
+        print(f"   Completed relevance scoring for {len(contents)} items ✅")
+        return scored_items
+
+    def _calculate_quick_relevance(self, content: ScrapedContent) -> float:
+        """Calculate quick relevance score without LLM."""
+        text = f"{content.title} {content.content}".lower()
+        
+        # High-value keywords (weighted)
+        high_value_keywords = {
+            'jwt': 0.2, 'oauth': 0.2, 'authentication': 0.15, 'saml': 0.15,
+            'sso': 0.15, 'security': 0.1, 'login': 0.1, 'session': 0.1,
+            'authorize': 0.1, 'credential': 0.1, 'token': 0.08
+        }
+        
+        score = 0.0
+        for keyword, weight in high_value_keywords.items():
+            if keyword in text:
+                # Count occurrences with diminishing returns
+                count = text.count(keyword)
+                score += weight * min(count, 3) / 3
+        
+        # Boost for question formats (indicates real problems)
+        if any(word in text for word in ['how', 'why', 'what', 'help', 'issue', 'problem', 'error']):
+            score += 0.1
+        
+        # Boost for implementation discussions
+        if any(word in text for word in ['implement', 'integration', 'setup', 'configure']):
+            score += 0.1
+        
+        return min(score, 1.0)
+
+    def _deep_process_with_progress(self, scored_items: List[Dict]) -> List[ProcessedContent]:
+        """Deep LLM processing with progress tracking and batching."""
+        processed_contents = []
+        total_items = len(scored_items)
+        
+        print(f"\n🤖 Deep LLM analysis of top {total_items} items...")
+        print("=" * 60)
+        
+        # Process in batches with progress
+        for batch_start in range(0, total_items, self.BATCH_SIZE):
+            batch_end = min(batch_start + self.BATCH_SIZE, total_items)
+            batch = scored_items[batch_start:batch_end]
+            
+            print(f"📦 Processing batch {batch_start//self.BATCH_SIZE + 1}/{(total_items-1)//self.BATCH_SIZE + 1} "
+                  f"(items {batch_start+1}-{batch_end})")
+            
+            # Process batch with threading for I/O efficiency
+            batch_results = self._process_batch_parallel(batch)
+            processed_contents.extend(batch_results)
+            
+            # Progress update
+            processed_count = len(processed_contents)
+            success_rate = (processed_count / (batch_end)) * 100 if batch_end > 0 else 0
+            print(f"   ✅ Completed: {processed_count}/{batch_end} items ({success_rate:.1f}% success rate)")
+            
+            # Brief pause to avoid overwhelming the API
+            if batch_end < total_items:
+                time.sleep(0.5)
+        
+        print(f"\n🎉 Deep analysis complete! Processed {len(processed_contents)} items successfully")
+        return processed_contents
+
+    def _process_batch_parallel(self, batch: List[Dict]) -> List[ProcessedContent]:
+        """Process a batch of items in parallel with controlled concurrency."""
+        results = []
+        
+        with ThreadPoolExecutor(max_workers=self.MAX_PARALLEL_REQUESTS) as executor:
+            # Submit all tasks
+            future_to_content = {
+                executor.submit(self._process_single_content_safe, item['content']): item
+                for item in batch
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_content):
+                try:
+                    result = future.result(timeout=60)  # 60s timeout per item
+                    if result:
+                        results.append(result)
+                except Exception as e:
+                    content = future_to_content[future]['content']
+                    self.logger.warning(f"Failed to process item '{content.title[:50]}...': {e}")
+        
+        return results
+
+    def _process_single_content_safe(self, content: ScrapedContent) -> ProcessedContent:
+        """Safe wrapper for single content processing with error handling."""
+        try:
+            return self._process_single_content(content)
+        except Exception as e:
+            self.logger.error(f"Error processing content {content.url}: {e}")
+            return None
 
     def _process_single_content(self, content: ScrapedContent) -> ProcessedContent:
         """Process a single piece of content with LLM."""
@@ -70,22 +226,37 @@ Please provide analysis in JSON format with:
 3. key_topics: List of main topics/technologies mentioned
 4. urgency_level: "low", "medium", or "high" based on urgency indicators
 
-Respond only with valid JSON:"""
+IMPORTANT: Respond ONLY with valid JSON. Do not include thinking steps or explanations. Example format:
+{{
+    "summary": "Brief content summary here",
+    "relevance_score": 0.8,
+    "key_topics": ["jwt", "oauth", "security"],
+    "urgency_level": "medium"
+}}"""
 
     def _call_ollama(self, prompt: str) -> str:
         """Make request to Ollama API."""
+        # Get model-specific configuration
+        model_config = self.config.MODEL_CONFIGS.get(
+            self.config.OLLAMA_MODEL, 
+            self.config.MODEL_CONFIGS["llama3.2:1b"]  # fallback
+        )
+        
         payload = {
             "model": self.config.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
-            "format": "json"
         }
+        
+        # Only add format if the model supports it
+        if model_config.get("format"):
+            payload["format"] = model_config["format"]
 
         try:
             response = requests.post(
                 self.ollama_url,
                 json=payload,
-                timeout=30
+                timeout=model_config.get("timeout", 30)
             )
             response.raise_for_status()
 
@@ -97,11 +268,45 @@ Respond only with valid JSON:"""
             return None
 
     def _parse_llm_response(self, response: str) -> Dict[str, Any]:
-        """Parse LLM JSON response."""
+        """Parse LLM JSON response, handling DeepSeek R1 thinking format."""
         try:
-            return json.loads(response)
+            # First try direct JSON parsing (for llama3.2:1b)
+            result = json.loads(response)
+            self.logger.debug("Parsed response using direct JSON")
+            return result
         except json.JSONDecodeError:
+            # Handle DeepSeek R1 format with thinking sections
+            try:
+                # DeepSeek R1 often outputs thinking + actual response
+                # Look for JSON after </thinking> tag or in the final output
+                if '</thinking>' in response:
+                    # Extract content after thinking section
+                    actual_response = response.split('</thinking>')[-1].strip()
+                    result = json.loads(actual_response)
+                    self.logger.debug("Parsed response after </thinking> tag")
+                    return result
+                elif '```json' in response:
+                    # Extract JSON from code block
+                    json_start = response.find('```json') + 7
+                    json_end = response.find('```', json_start)
+                    json_content = response[json_start:json_end].strip()
+                    result = json.loads(json_content)
+                    self.logger.debug("Parsed response from JSON code block")
+                    return result
+                else:
+                    # Try to find JSON-like content in the response
+                    import re
+                    json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+                    matches = re.findall(json_pattern, response)
+                    if matches:
+                        result = json.loads(matches[-1])  # Use the last/most complete JSON
+                        self.logger.debug("Parsed response using regex JSON extraction")
+                        return result
+            except (json.JSONDecodeError, IndexError):
+                pass
+            
             # Fallback parsing if JSON is malformed
+            self.logger.warning("Using fallback parsing for malformed LLM response")
             return {
                 'summary': response[:200],
                 'relevance_score': 0.5,
@@ -110,7 +315,7 @@ Respond only with valid JSON:"""
             }
 
     def generate_overall_summary(self, processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
-        """Generate overall summary of all processed content."""
+        """Generate overall summary of all processed content with smart aggregation."""
         if not processed_contents:
             return {
                 'overall_summary': 'No relevant content found.',
@@ -118,30 +323,54 @@ Respond only with valid JSON:"""
                 'high_priority_items': 0
             }
 
-        # Create summary prompt
-        summaries = [pc.summary for pc in processed_contents[:10]]  # Limit for prompt size
-        prompt = f"""Based on these authentication-related discussions from the last 5 minutes, provide an overall analysis:
+        print(f"\n📈 Generating executive summary from {len(processed_contents)} analyzed items...")
 
-Summaries:
+        # Smart summary generation using top items only
+        top_items = sorted(processed_contents, key=lambda x: x.relevance_score, reverse=True)[:10]
+        summaries = [pc.summary for pc in top_items]
+        
+        # Aggregate topics for trend analysis
+        all_topics = []
+        for pc in processed_contents:
+            all_topics.extend(pc.key_topics)
+        
+        # Count topic frequency for trends
+        topic_counts = {}
+        for topic in all_topics:
+            topic_counts[topic] = topic_counts.get(topic, 0) + 1
+        
+        top_trends = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        prompt = f"""Based on these top authentication-related discussions from recent analysis, provide an executive summary:
+
+High-Value Summaries:
 {chr(10).join([f"- {s}" for s in summaries])}
 
+Analytics:
+- Total items analyzed: {len(processed_contents)}
+- High-priority items: {len([pc for pc in processed_contents if pc.urgency_level == 'high'])}
+- Top trending topics: {[topic for topic, count in top_trends]}
+
 Provide JSON response with:
-1. overall_summary: Executive summary of current auth trends (max 300 words)
-2. top_trends: List of top 5 trending topics/issues
-3. high_priority_items: Count of high-urgency items
+1. overall_summary: Executive summary focusing on business opportunities and technical trends (max 300 words)
+2. top_trends: List of top 5 trending topics/technologies
+3. high_priority_items: Count of high-urgency items requiring immediate attention
 
 Respond only with valid JSON:"""
 
         response = self._call_ollama(prompt)
         if response:
             try:
-                return json.loads(response)
+                result = json.loads(response)
+                print("   ✅ Executive summary generated successfully")
+                return result
             except json.JSONDecodeError:
-                pass
+                self.logger.warning("Failed to parse summary JSON, using fallback")
 
-        # Fallback
+        # Enhanced fallback with actual data
+        print("   ⚠️  Using enhanced fallback summary")
         return {
-            'overall_summary': f'Analyzed {len(processed_contents)} authentication-related items.',
-            'top_trends': ['authentication', 'security'],
+            'overall_summary': f'Analyzed {len(processed_contents)} authentication-related items with {len([pc for pc in processed_contents if pc.relevance_score > 0.8])} high-relevance discussions. Key focus areas include {", ".join([topic for topic, _ in top_trends[:3]])}.',
+            'top_trends': [topic for topic, _ in top_trends],
             'high_priority_items': len([pc for pc in processed_contents if pc.urgency_level == 'high'])
         }

@@ -7,11 +7,23 @@ class Config:
     """Configuration class for scraper settings."""
 
     # LLM Settings
-    OLLAMA_MODEL = "llama3.2:1b"
+    OLLAMA_MODEL = "llama3.2:1b"  # Change to "deepseek-r1:1.5b" for DeepSeek R1
     OLLAMA_HOST = "http://localhost:11434"
+    
+    # Model-specific settings
+    MODEL_CONFIGS = {
+        "llama3.2:1b": {
+            "timeout": 30,
+            "format": "json"
+        },
+        "deepseek-r1:1.5b": {
+            "timeout": 60,  # DeepSeek R1 may need more time for thinking
+            "format": None  # Don't force JSON format, handle in parsing
+        }
+    }
 
     # Scraping Settings
-    TIME_WINDOW_MINUTES = 5
+    TIME_WINDOW_MINUTES = 60 * 6  # 6 hours for testing to get more data
     MAX_RESULTS_PER_SOURCE = 50
     REQUEST_TIMEOUT = 10
 
