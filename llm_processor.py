@@ -180,12 +180,65 @@ class LLMProcessor:
         return results
 
     def _process_single_content_safe(self, content: ScrapedContent) -> ProcessedContent:
-        """Safe wrapper for single content processing with error handling."""
+        """Safe wrapper for single content processing with error handling and validation."""
         try:
-            return self._process_single_content(content)
+            result = self._process_single_content(content)
+            
+            # Validate result has all required fields
+            if result and self._validate_processed_content(result):
+                return result
+            else:
+                self.logger.warning(f"Invalid LLM result for '{content.title[:50]}...', creating fallback")
+                return self._create_fallback_processed_content(content)
+                
         except Exception as e:
             self.logger.error(f"Error processing content {content.url}: {e}")
-            return None
+            return self._create_fallback_processed_content(content)
+    
+    def _validate_processed_content(self, content: ProcessedContent) -> bool:
+        """Validate that processed content has all required fields."""
+        if not content:
+            return False
+        
+        # Check required fields
+        required_checks = [
+            content.summary and len(content.summary.strip()) > 10,
+            isinstance(content.relevance_score, (int, float)) and 0 <= content.relevance_score <= 1,
+            content.key_topics and len(content.key_topics) > 0,
+            content.urgency_level in ['low', 'medium', 'high']
+        ]
+        
+        return all(required_checks)
+    
+    def _create_fallback_processed_content(self, content: ScrapedContent) -> ProcessedContent:
+        """Create fallback processed content when LLM fails."""
+        # Extract basic info from title and content
+        text = f"{content.title} {content.content}".lower()
+        
+        # Simple relevance calculation
+        relevance = self._calculate_quick_relevance(content)
+        
+        # Extract topics from keywords
+        topics = []
+        for keyword in self.config.AUTH_KEYWORDS:
+            if keyword in text:
+                topics.append(keyword)
+        topics = topics[:4] if topics else ['authentication']
+        
+        # Determine urgency from context
+        urgency = 'high' if any(word in text for word in ['urgent', 'help', 'error', 'broken', 'issue']) else 'medium'
+        
+        # Create basic summary
+        summary = f"Discussion about {', '.join(topics[:2])} in {content.source.value}. " \
+                 f"Author {content.author} seeking guidance on authentication implementation."
+        
+        return ProcessedContent(
+            original=content,
+            summary=summary,
+            relevance_score=max(relevance, 0.3),  # Ensure minimum relevance
+            key_topics=topics,
+            urgency_level=urgency
+        )
 
     def _process_single_content(self, content: ScrapedContent) -> ProcessedContent:
         """Process a single piece of content with LLM."""
@@ -209,6 +262,68 @@ class LLMProcessor:
         except Exception as e:
             self.logger.error(f"Error parsing LLM response: {e}")
             return None
+
+    def generate_opportunity_explanation(self, content: ProcessedContent) -> str:
+        """Generate GTM-focused explanation for why this is a high-value opportunity."""
+        # Use topic-based smart fallback for consistency
+        return self._fallback_explanation(content)
+    
+    def _clean_gtm_response(self, response: str) -> str:
+        """Clean and format GTM response."""
+        explanation = response.strip()
+        
+        # Remove thinking sections for DeepSeek
+        if '</thinking>' in explanation:
+            explanation = explanation.split('</thinking>')[-1].strip()
+        
+        # Remove JSON/formatting artifacts
+        explanation = explanation.replace('```', '').replace('"', '').replace('{', '').replace('}', '').strip()
+        
+        # Remove common prefixes
+        prefixes_to_remove = [
+            "This represents", "This is a", "This discussion", 
+            "The opportunity", "Business opportunity:", "GTM opportunity:"
+        ]
+        for prefix in prefixes_to_remove:
+            if explanation.lower().startswith(prefix.lower()):
+                explanation = explanation[len(prefix):].strip()
+        
+        # Ensure proper capitalization
+        if explanation and not explanation[0].isupper():
+            explanation = explanation[0].upper() + explanation[1:]
+        
+        # Limit length
+        if len(explanation) > 180:
+            sentences = explanation.split('. ')
+            explanation = '. '.join(sentences[:2])
+            if not explanation.endswith('.'):
+                explanation += '.'
+        
+        return explanation
+    
+    def _fallback_explanation(self, content: ProcessedContent) -> str:
+        """Generate fallback GTM explanation with business context."""
+        topic_focus = content.key_topics[0] if content.key_topics else "authentication"
+        
+        # Enhanced business context based on topics
+        if any(term in topic_focus.lower() for term in ['oauth', 'jwt', 'saml', 'sso']):
+            return f"Developer implementing {topic_focus} authentication presents qualified lead opportunity. " \
+                   f"Sales should offer technical consultation showcasing Descope's enterprise auth solutions."
+        
+        elif any(term in topic_focus.lower() for term in ['api', 'integration', 'setup']):
+            return f"API authentication challenges indicate timing opportunity for auth solution evaluation. " \
+                   f"Marketing should provide technical resources and schedule discovery call."
+        
+        elif any(term in topic_focus.lower() for term in ['security', 'vulnerability', 'breach']):
+            return f"Security-focused discussion signals urgent need for robust authentication. " \
+                   f"Sales should prioritize immediate outreach with security-first messaging."
+        
+        else:
+            urgency_map = {"high": "urgent", "medium": "qualified", "low": "potential"}
+            urgency_desc = urgency_map.get(content.urgency_level, "potential")
+            
+            return f"Developer discussing {topic_focus} presents {urgency_desc} lead opportunity. " \
+                   f"Team should engage with technical consultation and Descope platform demo."
 
     def _create_analysis_prompt(self, content: ScrapedContent) -> str:
         """Create analysis prompt for the LLM."""

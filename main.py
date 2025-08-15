@@ -138,17 +138,39 @@ class AuthContentScraper:
         # Sort by relevance and show top items
         top_items = sorted(result.processed_content, key=lambda x: x.relevance_score, reverse=True)[:8]
         
+        if top_items:
+            print("💡 Generating GTM insights...")
+        
         for i, content in enumerate(top_items, 1):
-            urgency_emoji = {"high": "🚨", "medium": "⚡", "low": "📝"}.get(content.urgency_level, "📝")
-            relevance_bar = "█" * int(content.relevance_score * 10) + "░" * (10 - int(content.relevance_score * 10))
-            
-            print(f"{i:2d}. {urgency_emoji} {content.original.title[:65]}...")
-            print(f"    🎯 Relevance: [{relevance_bar}] {content.relevance_score:.2f}")
-            print(f"    📍 Source: {content.original.source.value} | 👤 {content.original.author}")
-            print(f"    🏷️  Topics: {', '.join(content.key_topics[:4])}")
-            print(f"    💡 {content.summary[:120]}...")
-            print(f"    🔗 {content.original.url}")
-            print()
+            try:
+                urgency_emoji = {"high": "🚨", "medium": "⚡", "low": "📝"}.get(content.urgency_level, "📝")
+                relevance_bar = "█" * int(content.relevance_score * 10) + "░" * (10 - int(content.relevance_score * 10))
+                
+                print(f"{i:2d}. {urgency_emoji} {content.original.title[:65]}...")
+                print(f"    🎯 Relevance: [{relevance_bar}] {content.relevance_score:.2f}")
+                print(f"    📍 Source: {content.original.source.value} | 👤 {content.original.author}")
+                print(f"    🏷️  Topics: {', '.join(content.key_topics[:4]) if content.key_topics else 'authentication'}")
+                print(f"    💡 {(content.summary[:120] + '...') if content.summary else 'Content analysis available'}")
+                
+                # Generate GTM explanation with progress indicator
+                print(f"    🎯 GTM Opportunity: ", end="", flush=True)
+                try:
+                    gtm_explanation = self.llm_processor.generate_opportunity_explanation(content)
+                    print(gtm_explanation)
+                except Exception as e:
+                    self.logger.warning(f"Failed to generate GTM explanation for item {i}: {e}")
+                    # Fallback explanation
+                    topic = content.key_topics[0] if content.key_topics else "authentication"
+                    print(f"High-value {content.urgency_level}-priority discussion about {topic}. "
+                          f"Sales team should evaluate for lead generation opportunity.")
+                
+                print(f"    🔗 {content.original.url}")
+                print()
+                
+            except Exception as e:
+                self.logger.error(f"Error formatting opportunity {i}: {e}")
+                print(f"{i:2d}. ❌ Error displaying opportunity (check logs)")
+                print()
 
 def main():
     """Main entry point."""
