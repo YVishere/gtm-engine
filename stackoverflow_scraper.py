@@ -16,6 +16,12 @@ class StackOverflowScraper(BaseScraper):
         super().__init__()
         self.base_url = "https://api.stackexchange.com/2.3"
         self.site = "stackoverflow"
+        
+        # Log API key status
+        if self.config.STACKOVERFLOW_API_KEY:
+            self.logger.info("StackOverflow API key loaded - enhanced rate limits available")
+        else:
+            self.logger.warning("No StackOverflow API key - using default rate limits")
 
     def get_source_type(self) -> SourceType:
         """Return StackOverflow as source type."""
@@ -31,8 +37,9 @@ class StackOverflowScraper(BaseScraper):
             tag_content = self._scrape_tag_questions(tag)
             all_content.extend(tag_content)
 
-            # Rate limiting for StackOverflow API
-            time.sleep(2)
+            # Rate limiting - reduced since we're using API key
+            delay = 1 if self.config.STACKOVERFLOW_API_KEY else 2
+            time.sleep(delay)
 
         return all_content
 
@@ -48,6 +55,13 @@ class StackOverflowScraper(BaseScraper):
             'pagesize': min(self.config.MAX_RESULTS_PER_SOURCE, 100),
             'filter': 'withbody'  # Include question body
         }
+        
+        # Add API key if available for higher rate limits
+        if self.config.STACKOVERFLOW_API_KEY:
+            params['key'] = self.config.STACKOVERFLOW_API_KEY
+            self.logger.debug(f"Using StackOverflow API key for enhanced rate limits")
+        else:
+            self.logger.warning("No StackOverflow API key found - using limited rate limits")
 
         response = self._make_request(url, params=params)
         if not response:

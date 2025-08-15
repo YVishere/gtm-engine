@@ -1,7 +1,12 @@
 """Configuration settings for the LLM webscraper."""
 
+import os
 from datetime import datetime, timedelta
 from typing import List
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
 
 class Config:
     """Configuration class for scraper settings."""
@@ -21,6 +26,10 @@ class Config:
             "format": None  # Don't force JSON format, handle in parsing
         }
     }
+
+    # API Keys from environment
+    STACKOVERFLOW_API_KEY = os.getenv('STACK_OVERFLOW_API')
+    GITHUB_API_KEY = os.getenv('GITHUB_API')
 
     # Scraping Settings
     TIME_WINDOW_MINUTES = 60 * 6  # 6 hours for testing to get more data
