@@ -29,10 +29,10 @@ This project leverages several advanced computing techniques working in concert 
 - **Implementation**: Configured for optimal balance between speed and cluster quality
 
 ### 4. **Natural Language Processing**
-- **Technology**: TF-IDF (Term Frequency-Inverse Document Frequency) + Pattern Matching
-- **Purpose**: Extracts key themes and topics from clustered content
+- **Technology**: Pattern Matching + Word Frequency Analysis with Stop Word Filtering
+- **Purpose**: Extracts key themes and topics from clustered content using domain-specific patterns
 - **Role**: Generates meaningful cluster descriptions and identifies technical patterns
-- **Implementation**: Authentication-specific pattern detection with business context mapping
+- **Implementation**: Authentication-specific pattern detection with frequency-based keyword extraction and comprehensive stop word filtering
 
 ### 5. **Large Language Model Integration**
 - **Technology**: Ollama local LLM (Llama 3.1:8b, DeepSeek R1:1.5b support)
