@@ -267,14 +267,53 @@ class VectorizedLLMProcessor:
         return clusters
     
     def _extract_cluster_theme(self, cluster_texts: List[str]) -> str:
-        """Extract main theme from cluster texts using TF-IDF."""
+        """Extract main theme from cluster texts using TF-IDF with auth focus."""
         if len(cluster_texts) < 2:
-            return "general authentication"
+            return "authentication implementation challenges"
         
         try:
-            # Use TF-IDF to find important terms
+            # Create combined text for analysis
+            combined_text = ' '.join(cluster_texts).lower()
+            
+            # Check for specific auth patterns first
+            auth_patterns = {
+                'jwt': ['jwt', 'token', 'payload', 'refresh', 'validation', 'malformed'],
+                'oauth': ['oauth', 'openid', 'oidc', 'pkce', 'authorization'],
+                'session': ['session', 'cookie', 'stateless', 'jsessionid', 'persistence'],
+                'spring': ['spring', 'boot', 'security', 'gateway', 'authorization-server'],
+                'security': ['401', '403', 'unauthorized', 'forbidden', 'vulnerability'],
+                'implementation': ['how to', 'configure', 'setup', 'implement', 'error'],
+                'enterprise': ['saml', 'sso', 'ldap', 'enterprise', 'microservices']
+            }
+            
+            # Score each pattern
+            pattern_scores = {}
+            for pattern_name, keywords in auth_patterns.items():
+                score = sum(1 for keyword in keywords if keyword in combined_text)
+                if score > 0:
+                    pattern_scores[pattern_name] = score
+            
+            # Get top patterns
+            if pattern_scores:
+                top_patterns = sorted(pattern_scores.items(), key=lambda x: x[1], reverse=True)[:2]
+                
+                # Create meaningful theme descriptions
+                theme_descriptions = {
+                    'jwt': 'JWT payload malformation and validation issues',
+                    'oauth': 'OAuth2 and OpenID Connect integration challenges',
+                    'session': 'Session management and stateless authentication',
+                    'spring': 'Spring Boot security configuration problems',
+                    'security': 'Authentication security vulnerabilities and errors',
+                    'implementation': 'Authentication implementation and setup questions',
+                    'enterprise': 'Enterprise authentication and SSO integration'
+                }
+                
+                primary_theme = top_patterns[0][0]
+                return theme_descriptions.get(primary_theme, f"{primary_theme} authentication issues")
+            
+            # Fallback to TF-IDF if no patterns match
             vectorizer = TfidfVectorizer(
-                max_features=10,
+                max_features=5,
                 stop_words='english',
                 ngram_range=(1, 2)
             )
@@ -284,10 +323,13 @@ class VectorizedLLMProcessor:
             
             # Get average TF-IDF scores
             mean_scores = np.mean(tfidf_matrix.toarray(), axis=0)
-            top_indices = np.argsort(mean_scores)[::-1][:3]
+            top_indices = np.argsort(mean_scores)[::-1][:2]
             
             top_terms = [feature_names[i] for i in top_indices if mean_scores[i] > 0]
-            return ' '.join(top_terms) if top_terms else "authentication issues"
+            if top_terms:
+                return f"{' '.join(top_terms)} authentication challenges"
+            
+            return "general authentication implementation issues"
         
         except Exception as e:
             self.logger.warning(f"Theme extraction failed: {e}")
@@ -346,8 +388,8 @@ class VectorizedLLMProcessor:
         # Determine relevance based on cluster characteristics
         relevance_score = min(0.5 + (cluster.size * 0.1) + (0.3 if cluster.urgency_level == 'high' else 0.1), 0.95)
         
-        # Extract key topics from cluster theme
-        key_topics = [term.replace(' ', '-') for term in cluster.theme.split()[:3]]
+        # Extract meaningful key topics from cluster theme and content
+        key_topics = self._extract_meaningful_topics(cluster.theme, rep_item)
         
         return {
             'summary': summary,
@@ -357,6 +399,66 @@ class VectorizedLLMProcessor:
             'cluster_theme': cluster.theme,
             'cluster_category': cluster.category
         }
+    
+    def _extract_meaningful_topics(self, theme: str, item: ScrapedContent) -> List[str]:
+        """Extract meaningful topics from theme and content."""
+        topics = []
+        
+        # Check theme for specific patterns
+        theme_lower = theme.lower()
+        content_lower = f"{item.title} {item.content}".lower()
+        
+        # JWT-related topics
+        if 'jwt' in theme_lower:
+            if 'refresh' in content_lower:
+                topics.append('jwt-refresh-tokens')
+            elif 'payload' in content_lower or 'malformed' in content_lower:
+                topics.append('jwt-payload-validation')
+            else:
+                topics.append('jwt-authentication')
+        
+        # OAuth-related topics  
+        if 'oauth' in theme_lower or 'openid' in theme_lower:
+            if 'pkce' in content_lower:
+                topics.append('oauth2-pkce')
+            elif 'oidc' in content_lower or 'openid' in content_lower:
+                topics.append('openid-connect')
+            else:
+                topics.append('oauth-integration')
+        
+        # Session-related topics
+        if 'session' in theme_lower:
+            if 'stateless' in content_lower:
+                topics.append('stateless-authentication')
+            elif 'scale' in content_lower or 'distributed' in content_lower:
+                topics.append('session-scaling')
+            else:
+                topics.append('session-management')
+        
+        # Spring-related topics
+        if 'spring' in theme_lower:
+            if 'gateway' in content_lower:
+                topics.append('spring-cloud-gateway')
+            elif 'security' in content_lower:
+                topics.append('spring-security')
+            else:
+                topics.append('spring-boot-auth')
+        
+        # Security-related topics
+        if any(code in content_lower for code in ['401', '403', 'unauthorized', 'forbidden']):
+            topics.append('authentication-errors')
+        
+        # Fallback topics if none found
+        if not topics:
+            if 'authentication' in content_lower:
+                topics.append('authentication-implementation')
+            elif 'security' in content_lower:
+                topics.append('security-configuration')
+            else:
+                topics.append('auth-general')
+        
+        # Limit to 3 topics
+        return topics[:3]
     
     def _propagate_analysis_to_cluster(self, analysis: Dict[str, Any], cluster: ClusterInfo) -> List[ProcessedContent]:
         """Apply analysis to all items in the cluster with variations."""
@@ -403,7 +505,7 @@ class VectorizedLLMProcessor:
         return self._cluster_analysis
     
     def generate_overall_summary(self, processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
-        """Generate enhanced summary using cluster analysis."""
+        """Generate enhanced summary using cluster analysis and LLM."""
         if not processed_contents:
             return {
                 'overall_summary': 'No relevant content found.',
@@ -416,35 +518,146 @@ class VectorizedLLMProcessor:
         # Use cluster analysis for better insights
         cluster_data = getattr(self, '_cluster_analysis', {})
         
-        # Generate business-focused summary
+        # Get top items for LLM analysis
+        top_items = sorted(processed_contents, key=lambda x: x.relevance_score, reverse=True)[:15]
+        
+        # Create rich context for LLM summary generation
+        content_snippets = []
+        urgency_items = []
+        
+        for pc in top_items:
+            title = pc.original.title
+            source = pc.original.source.value
+            content_snippets.append(f"[{source.upper()}] {title}: {pc.summary}")
+            
+            if pc.urgency_level == 'high':
+                urgency_items.append(f"• {title} (from {source})")
+        
         high_priority_count = len([pc for pc in processed_contents if pc.urgency_level == 'high'])
         total_items = len(processed_contents)
         
-        # Create executive summary
-        summary_parts = []
-        summary_parts.append(f"Authentication intelligence analysis reveals {total_items} discussions clustered into {cluster_data.get('total_clusters', 'multiple')} distinct conversation themes.")
+        # Use LLM for better summary generation
+        try:
+            from llm_processor import LegacyLLMProcessor
+            legacy_processor = LegacyLLMProcessor()
+            
+            # Create context for the LLM similar to the original working version
+            context_data = {
+                'total_analyzed': total_items,
+                'high_relevance': len([pc for pc in processed_contents if pc.relevance_score > 0.7]),
+                'sources': list(set([pc.original.source.value for pc in processed_contents])),
+                'high_priority_count': high_priority_count
+            }
+            
+            # Use the exact same prompt structure that was working before
+            prompt = f"""You are analyzing authentication and security discussions for business intelligence. Based on the following content analysis, generate insights for a GTM (Go-To-Market) team.
+
+CONTENT ANALYSIS ({len(content_snippets)} top items):
+{chr(10).join(content_snippets)}
+
+HIGH PRIORITY ITEMS REQUIRING ATTENTION:
+{chr(10).join(urgency_items) if urgency_items else "None identified"}
+
+CONTEXT:
+- Total discussions analyzed: {context_data['total_analyzed']}
+- High-relevance items: {context_data['high_relevance']}
+- Sources: {', '.join(context_data['sources'])}
+- High-priority alerts: {context_data['high_priority_count']}
+
+Generate a comprehensive business intelligence summary focusing on:
+1. What authentication challenges developers are facing RIGHT NOW
+2. Which technologies/approaches are trending and causing problems
+3. Specific business opportunities for auth solution providers like Descope
+4. Market sentiment and developer pain points that indicate buying intent
+
+Return your analysis in this exact JSON format:
+{{
+    "overall_summary": "Comprehensive 3-4 sentence executive summary highlighting: (1) key authentication challenges developers face, (2) trending technologies causing issues, (3) business opportunities for auth providers, and (4) market sentiment indicating purchase intent",
+    "top_trends": ["Trend 1: Specific technical challenge developers are discussing with business context", "Trend 2: Another key technology pattern or implementation issue", "Trend 3: Market sentiment or pain point indicating sales opportunity", "Trend 4: Emerging technology adoption or integration challenge", "Trend 5: Developer behavior pattern suggesting vendor evaluation"],
+    "high_priority_items": {context_data['high_priority_count']}
+}}
+
+IMPORTANT: Return only valid JSON without any additional text, thinking, or formatting."""
+
+            response = legacy_processor._call_ollama(prompt)
+            if response:
+                parsed_result = legacy_processor._parse_llm_response(response)
+                if parsed_result and 'overall_summary' in parsed_result and len(parsed_result.get('overall_summary', '')) > 50:
+                    print("   ✅ LLM-enhanced executive summary generated")
+                    return parsed_result
         
-        if cluster_data.get('top_themes'):
-            top_themes = cluster_data['top_themes'][:3]
-            summary_parts.append(f"Primary focus areas include {', '.join(top_themes)}.")
+        except Exception as e:
+            self.logger.warning(f"LLM summary generation failed: {e}")
         
-        if high_priority_count > 0:
-            summary_parts.append(f"Critical business opportunities identified: {high_priority_count} high-urgency discussions indicating immediate vendor evaluation needs.")
+        # Enhanced fallback using the same logic as the original processor
+        print("   ⚠️  Using enhanced fallback summary with real insights")
         
-        summary_parts.append("Market analysis shows developers actively seeking enterprise-grade authentication solutions with emphasis on implementation simplicity and security compliance.")
+        # Generate basic insights from actual data (like original processor)
+        common_issues = []
+        for pc in top_items[:5]:
+            if 'jwt' in pc.summary.lower():
+                common_issues.append("JWT implementation challenges")
+            elif 'oauth' in pc.summary.lower():
+                common_issues.append("OAuth integration complexities")
+            elif 'session' in pc.summary.lower():
+                common_issues.append("Session management issues")
+            elif 'security' in pc.summary.lower():
+                common_issues.append("Security vulnerability concerns")
+            elif 'spring' in pc.summary.lower():
+                common_issues.append("Spring Boot configuration challenges")
         
-        overall_summary = ' '.join(summary_parts)
+        unique_issues = list(set(common_issues))
+        if not unique_issues:
+            unique_issues = ["authentication implementation challenges", "security configuration issues", "integration complexities"]
         
-        # Generate semantic trends from clusters
-        top_trends = self._generate_semantic_trends(cluster_data)
+        # Create executive summary with the same quality as original
+        overall_summary = f'Authentication intelligence analysis reveals {total_items} discussions across {len(set([pc.original.source.value for pc in processed_contents]))} developer platforms, indicating active market engagement. Primary challenges center around {", ".join(unique_issues[:3])}. Market sentiment shows {high_priority_count} high-urgency situations requiring immediate vendor consultation. Developer discussions indicate strong preference for enterprise-grade solutions that solve authentication complexity while maintaining security standards.'
+        
+        # Generate enhanced trends similar to original processor
+        enhanced_trends = []
+        
+        # Count specific issues from actual content
+        jwt_count = len([pc for pc in top_items if 'jwt' in pc.summary.lower()])
+        oauth_count = len([pc for pc in top_items if 'oauth' in pc.summary.lower() or 'openid' in pc.summary.lower()])
+        spring_count = len([pc for pc in top_items if 'spring' in pc.summary.lower()])
+        session_count = len([pc for pc in top_items if 'session' in pc.summary.lower()])
+        security_count = len([pc for pc in top_items if any(code in pc.summary.lower() for code in ['401', '403', 'unauthorized', 'error'])])
+        
+        if jwt_count > 0:
+            enhanced_trends.append(f"JWT Implementation Crisis: {jwt_count} developers struggling with token refresh mechanisms and payload validation errors")
+        
+        if oauth_count > 0:
+            enhanced_trends.append(f"OAuth2 Integration Complexity: Growing adoption challenges with PKCE implementation and third-party provider configuration")
+        
+        if spring_count > 0:
+            enhanced_trends.append(f"Spring Boot Security Challenges: {spring_count} discussions about configuration and implementation issues")
+        
+        if session_count > 0:
+            enhanced_trends.append(f"Session Management Scaling: Scalability issues in distributed systems and stateless authentication")
+        
+        if security_count > 0:
+            enhanced_trends.append(f"Authentication Error Resolution: {security_count} developers facing 401/403 errors and security vulnerabilities")
+        
+        # Add fallback trends if not enough
+        fallback_trends = [
+            "Enterprise Authentication Scaling: Companies evaluating solutions for microservices architecture and distributed session management",
+            "Security-First Development: Increased focus on vulnerability prevention and compliance-ready authentication systems",
+            "Developer Experience Optimization: Demand for authentication solutions that reduce implementation time and maintenance overhead"
+        ]
+        
+        while len(enhanced_trends) < 5:
+            if len(fallback_trends) > 0:
+                enhanced_trends.append(fallback_trends.pop(0))
+            else:
+                break
         
         result = {
             'overall_summary': overall_summary,
-            'top_trends': top_trends,
+            'top_trends': enhanced_trends[:5],
             'high_priority_items': high_priority_count
         }
         
-        print("   ✅ Cluster-based executive summary generated")
+        print("   ✅ Enhanced cluster-based executive summary generated")
         return result
     
     def _generate_semantic_trends(self, cluster_data: Dict[str, Any]) -> List[str]:
@@ -487,3 +700,54 @@ class VectorizedLLMProcessor:
                 return context
         
         return "Growing discussion volume indicating active market interest and vendor evaluation"
+    
+    def generate_opportunity_explanation(self, content: ProcessedContent) -> str:
+        """Generate GTM-focused explanation for business opportunities."""
+        # Use the original business categorization logic
+        business_cat = self.business_categorizer.categorize_business_opportunity(
+            np.zeros(384), # Dummy embedding since we already have the analysis
+            content.original.content
+        )
+        
+        opportunity_map = {
+            'hot_leads': 'urgent lead opportunity. Team should engage with technical consultation and Descope platform demo',
+            'evaluation_phase': 'qualified lead opportunity. Sales should offer technical consultation showcasing Descope\'s enterprise auth solutions',
+            'implementation_stage': 'qualified lead opportunity. Sales should offer technical consultation showcasing Descope\'s enterprise auth solutions',
+            'scaling_challenges': 'urgent lead opportunity. Team should engage with technical consultation and Descope platform demo'
+        }
+        
+        if content.key_topics:
+            topic_focus = content.key_topics[0].replace('-', ' ')
+        else:
+            topic_focus = 'authentication'
+        
+        opportunity_desc = opportunity_map.get(business_cat, 'qualified lead opportunity. Sales should offer technical consultation showcasing Descope\'s enterprise auth solutions')
+        
+        return f"Developer implementing {topic_focus} authentication presents {opportunity_desc}."
+    
+    def _generate_enhanced_business_context(self, theme: str, processed_contents: List[ProcessedContent]) -> str:
+        """Generate enhanced business context based on theme and actual content."""
+        theme_lower = theme.lower()
+        
+        # Count related discussions for context
+        related_count = sum(1 for pc in processed_contents 
+                          if any(keyword in pc.summary.lower() for keyword in theme_lower.split()))
+        
+        high_urgency_count = sum(1 for pc in processed_contents 
+                               if pc.urgency_level == 'high' and 
+                               any(keyword in pc.summary.lower() for keyword in theme_lower.split()))
+        
+        # Generate context based on theme patterns
+        if 'jwt' in theme_lower and ('payload' in theme_lower or 'validation' in theme_lower):
+            return f"Critical token management issues affecting {related_count} developers, with {high_urgency_count} requiring immediate vendor consultation"
+        elif 'oauth' in theme_lower or 'openid' in theme_lower:
+            return f"Integration challenges across {related_count} discussions showing active provider evaluation and implementation struggles"
+        elif 'spring' in theme_lower and 'security' in theme_lower:
+            return f"Framework-specific implementation issues in {related_count} discussions indicating enterprise solution requirements"
+        elif 'session' in theme_lower:
+            return f"Scalability and persistence concerns in {related_count} conversations suggesting distributed authentication needs"
+        elif 'security' in theme_lower or '401' in theme_lower or '403' in theme_lower:
+            return f"Security vulnerability discussions in {related_count} threads indicating compliance-driven purchasing decisions"
+        else:
+            urgency_desc = "immediate consultation opportunities" if high_urgency_count > related_count * 0.5 else "qualified lead generation potential"
+            return f"Growing discussion volume ({related_count} threads) indicating active market interest and {urgency_desc}"

@@ -39,6 +39,14 @@ class LLMProcessor:
     def generate_overall_summary(self, processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
         """Generate overall summary."""
         return self.processor.generate_overall_summary(processed_contents)
+    
+    def generate_opportunity_explanation(self, content: ProcessedContent) -> str:
+        """Generate GTM opportunity explanation."""
+        if hasattr(self.processor, 'generate_opportunity_explanation'):
+            return self.processor.generate_opportunity_explanation(content)
+        else:
+            # Fallback for legacy processor
+            return f"High-value {content.urgency_level}-priority discussion about {content.key_topics[0] if content.key_topics else 'authentication'}. Sales team should evaluate for lead generation opportunity."
 
 
 class LegacyLLMProcessor:
