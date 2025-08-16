@@ -23,7 +23,7 @@ class LLMProcessor:
         self.BATCH_SIZE = 10  # Process items in batches for better progress tracking
         self.MAX_PARALLEL_REQUESTS = 3  # Limit concurrent API calls
         self.RELEVANCE_THRESHOLD = 0.3  # Lower threshold to see more results (was 0.7)
-        self.MAX_ITEMS_TO_PROCESS = 100  # Cap for production performance
+        self.MAX_ITEMS_TO_PROCESS = 1000  # Cap for production performance
 
     def process_content_batch(self, contents: List[ScrapedContent]) -> List[ProcessedContent]:
         """Process a batch of scraped content with smart filtering and progress tracking."""

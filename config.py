@@ -24,6 +24,10 @@ class Config:
         "deepseek-r1:1.5b": {
             "timeout": 60,  # DeepSeek R1 may need more time for thinking
             "format": None  # Don't force JSON format, handle in parsing
+        },
+        "llama3.1:8b": {
+            "timeout": 30,
+            "format": "json"
         }
     }
 
@@ -32,7 +36,7 @@ class Config:
     GITHUB_API_KEY = os.getenv('GITHUB_API')
 
     # Scraping Settings
-    TIME_WINDOW_MINUTES = 60 * 6  # 6 hours for testing to get more data
+    TIME_WINDOW_MINUTES = 60 * 24 * 30 * 5  # 5 months for testing to get more data
     MAX_RESULTS_PER_SOURCE = 50
     REQUEST_TIMEOUT = 10
 
