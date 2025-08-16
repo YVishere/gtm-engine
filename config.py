@@ -41,7 +41,7 @@ class Config:
 
     # Scraping Settings
     TIME_WINDOW_MINUTES = 60 * 24 * 30 * 5  # 5 months for testing to get more data
-    MAX_RESULTS_PER_SOURCE = 50
+    MAX_RESULTS_PER_SOURCE = 200
     REQUEST_TIMEOUT = 10
 
     # Vector Processing Settings
@@ -51,7 +51,7 @@ class Config:
     CLUSTER_SIMILARITY_THRESHOLD = 0.75
     REPRESENTATIVE_SAMPLE_SIZE = 1  # Per cluster
     BATCH_EMBEDDING_SIZE = 100
-    MAX_CLUSTERS_TO_PROCESS = 20
+    MAX_CLUSTERS_TO_PROCESS = 100
     UMAP_COMPONENTS = 50  # Dimensionality reduction
 
     # Keywords for authentication-related content
