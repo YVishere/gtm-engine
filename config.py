@@ -12,11 +12,15 @@ class Config:
     """Configuration class for scraper settings."""
 
     # LLM Settings
-    OLLAMA_MODEL = "llama3.2:1b"  # Change to "deepseek-r1:1.5b" for DeepSeek R1
+    OLLAMA_MODEL = "llama3.1:8b"  # Change to "deepseek-r1:1.5b" for DeepSeek R1
     OLLAMA_HOST = "http://localhost:11434"
     
     # Model-specific settings
     MODEL_CONFIGS = {
+        "llama3.2:3b": {
+            "timeout": 30,
+            "format": "json"
+        },
         "llama3.2:1b": {
             "timeout": 30,
             "format": "json"
