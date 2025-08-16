@@ -523,26 +523,41 @@ class VectorizedLLMProcessor:
                 
                 combined_text = " ".join(texts)
                 
-                # TF-IDF extraction for meaningful keywords
-                vectorizer = TfidfVectorizer(
-                    max_features=25,  # Top 25 keywords per cluster
-                    stop_words='english',
-                    ngram_range=(1, 2),  # Include bigrams for better context
-                    min_df=1,
-                    max_df=0.95
-                )
+                # Use simple word frequency for ALL clusters to avoid TF-IDF issues
+                from collections import Counter
+                import re
                 
-                if len(combined_text.strip()) == 0:
-                    keywords = ['authentication', 'security']  # Fallback
-                else:
-                    tfidf_matrix = vectorizer.fit_transform([combined_text])
-                    feature_names = vectorizer.get_feature_names_out()
-                    scores = tfidf_matrix.toarray()[0]
-                    
-                    # Get top keywords with scores
-                    keyword_scores = list(zip(feature_names, scores))
-                    keyword_scores.sort(key=lambda x: x[1], reverse=True)
-                    keywords = [kw[0] for kw in keyword_scores[:20]]  # Top 20
+                # Extract words and clean them
+                words = re.findall(r'\b[a-zA-Z]{3,}\b', combined_text.lower())
+                word_counts = Counter(words)
+                
+                # Filter out common stop words
+                stop_words = {
+                    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'had', 
+                    'have', 'what', 'were', 'said', 'each', 'which', 'she', 'their', 'time', 'will', 'way', 'about', 
+                    'many', 'then', 'them', 'write', 'would', 'like', 'has', 'into', 'more', 'two', 'how', 'its', 
+                    'who', 'did', 'get', 'may', 'him', 'old', 'see', 'now', 'could', 'people', 'than', 'first', 
+                    'been', 'call', 'day', 'find', 'long', 'down', 'side', 'use', 'from', 'they', 'know', 'water', 
+                    'with', 'this', 'that', 'such', 'when', 'where', 'why', 'how', 'what', 'which', 'who', 'whom',
+                    'here', 'there', 'some', 'any', 'every', 'all', 'both', 'each', 'few', 'more', 'most', 'other',
+                    'another', 'such', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just',
+                    'should', 'now', 'https', 'www', 'com', 'org', 'net', 'stackoverflow', 'reddit'
+                }
+                
+                # Get meaningful keywords
+                filtered_words = [(word, count) for word, count in word_counts.most_common(50) 
+                                if word not in stop_words and len(word) > 3]
+                keywords = [word for word, count in filtered_words[:20]]
+                
+                # Ensure we have some keywords
+                if not keywords:
+                    keywords = ['authentication', 'security']
+                
+                # Get sample content snippets for better LLM context
+                content_snippets = []
+                for item in cluster.items[:3]:  # Top 3 items from cluster
+                    snippet = f"{item.title}: {item.content[:200]}..."
+                    content_snippets.append(snippet)
                 
                 return {
                     'cluster_id': cluster.id,
@@ -551,7 +566,8 @@ class VectorizedLLMProcessor:
                     'keywords': keywords,
                     'category': cluster.category,
                     'urgency': cluster.urgency_level,
-                    'representative_title': cluster.representative_item.title
+                    'representative_title': cluster.representative_item.title,
+                    'content_snippets': content_snippets  # Add actual content for LLM
                 }
                 
             except Exception as e:
@@ -563,7 +579,8 @@ class VectorizedLLMProcessor:
                     'keywords': ['authentication', 'security'],
                     'category': cluster.category,
                     'urgency': cluster.urgency_level,
-                    'representative_title': cluster.representative_item.title
+                    'representative_title': cluster.representative_item.title,
+                    'content_snippets': [f"{cluster.representative_item.title}: {cluster.representative_item.content[:200]}"]
                 }
         
         # Process clusters in parallel
@@ -615,7 +632,10 @@ class VectorizedLLMProcessor:
             
             for ck in cluster_keywords:
                 urgency_indicator = "🔥 HIGH" if ck['urgency'] == 'high' else "📊 MED" if ck['urgency'] == 'medium' else "📋 LOW"
-                cluster_desc = f"Cluster {ck['cluster_id']} ({ck['size']} discussions, {urgency_indicator}): {ck['theme']} [{ck['category']}] - Key terms: {', '.join(ck['keywords'][:15])}"
+                
+                # Include actual content snippets for better context
+                content_preview = " | ".join(ck['content_snippets'][:2])  # Top 2 content snippets
+                cluster_desc = f"Cluster {ck['cluster_id']} ({ck['size']} discussions, {urgency_indicator}): {ck['theme']} [{ck['category']}]\n   Content: {content_preview}\n   Keywords: {', '.join(ck['keywords'][:10])}"
                 cluster_context.append(cluster_desc)
                 
                 if ck['urgency'] == 'high':
