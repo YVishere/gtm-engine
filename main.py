@@ -76,6 +76,19 @@ class AuthContentScraper:
         # Generate overall summary
         summary_data = self.llm_processor.generate_overall_summary(processed_content)
 
+        # Create DescopeInsights from summary data
+        descope_insights = None
+        if 'descope_insights' in summary_data:
+            from models import DescopeInsights
+            insights_data = summary_data['descope_insights']
+            descope_insights = DescopeInsights(
+                pain_points=insights_data['pain_points'],
+                competitive_intel=insights_data['competitive_intel'],
+                migration_opportunities=insights_data['migration_opportunities'],
+                total_discussions_analyzed=insights_data['total_discussions_analyzed'],
+                high_value_opportunities=insights_data['high_value_opportunities']
+            )
+
         # Create final result
         result = ScrapingResult(
             session_id=session_id,
@@ -84,7 +97,8 @@ class AuthContentScraper:
             sources_scraped=sources_scraped,
             processed_content=processed_content,
             overall_summary=summary_data.get('overall_summary', ''),
-            top_trends=summary_data.get('top_trends', [])
+            top_trends=summary_data.get('top_trends', []),
+            descope_insights=descope_insights
         )
 
         print(f"\n🎉 Session {session_id} completed successfully!")
@@ -131,6 +145,62 @@ class AuthContentScraper:
         for i, trend in enumerate(result.top_trends[:7], 1):
             print(f"{i:2d}. {trend}")
         print()
+
+        # Display Descope-specific insights
+        if result.descope_insights:
+            print("🎯 DESCOPE-SPECIFIC INSIGHTS")
+            print("-" * 40)
+            
+            # Pain Points
+            if result.descope_insights.pain_points:
+                print("Authentication Pain Points Detected:")
+                pain_point_names = {
+                    'jwt_refresh_complexity': 'JWT refresh token complexity',
+                    'social_login_integration': 'Social login integration challenges',
+                    'multi_tenant_auth': 'Multi-tenant authentication',
+                    'passwordless_migration': 'Passwordless migration concerns'
+                }
+                for pain_point, percentage in sorted(result.descope_insights.pain_points.items(), 
+                                                   key=lambda x: x[1], reverse=True):
+                    display_name = pain_point_names.get(pain_point, pain_point.replace('_', ' ').title())
+                    print(f" • {display_name}: {percentage}% of discussions")
+                print()
+            
+            # Competitive Intelligence
+            if result.descope_insights.competitive_intel:
+                print("Competitive Intelligence:")
+                competitor_names = {
+                    'auth0': 'Auth0 migration discussions',
+                    'firebase_auth': 'Firebase Auth limitations',
+                    'custom_auth': 'Custom auth system issues',
+                    'cognito': 'AWS Cognito concerns',
+                    'supabase': 'Supabase migration signals',
+                    'clerk': 'Clerk.dev discussions'
+                }
+                for competitor, count in sorted(result.descope_insights.competitive_intel.items(), 
+                                              key=lambda x: x[1], reverse=True):
+                    display_name = competitor_names.get(competitor, competitor.replace('_', ' ').title())
+                    print(f" • {display_name}: {count} opportunities")
+                print()
+            
+            # Migration Opportunities
+            if result.descope_insights.migration_opportunities:
+                print("Migration Opportunities:")
+                migration_names = {
+                    'auth0_migration': 'Auth0 to Descope candidates',
+                    'firebase_migration': 'Firebase to Descope prospects',
+                    'custom_migration': 'Custom auth replacement opportunities'
+                }
+                for migration, count in sorted(result.descope_insights.migration_opportunities.items(), 
+                                             key=lambda x: x[1], reverse=True):
+                    display_name = migration_names.get(migration, migration.replace('_', ' ').title())
+                    print(f" • {display_name}: {count} prospects")
+                print()
+            
+            # High-value summary
+            print(f"High-Value Opportunities: {result.descope_insights.high_value_opportunities} urgent leads requiring immediate consultation")
+            print(f"Total Discussions Analyzed: {result.descope_insights.total_discussions_analyzed}")
+            print()
 
         print("🔥 HIGH-VALUE OPPORTUNITIES")
         print("-" * 40)

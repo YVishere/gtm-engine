@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from enum import Enum
 
 class SourceType(Enum):
@@ -37,6 +37,15 @@ class ProcessedContent:
     urgency_level: str  # low, medium, high
 
 @dataclass
+class DescopeInsights:
+    """Model for Descope-specific business intelligence."""
+    pain_points: Dict[str, float]  # pain point -> percentage
+    competitive_intel: Dict[str, int]  # competitor -> opportunity count
+    migration_opportunities: Dict[str, int]  # source -> prospect count
+    total_discussions_analyzed: int
+    high_value_opportunities: int
+
+@dataclass
 class ScrapingResult:
     """Model for complete scraping session results."""
     session_id: str
@@ -46,3 +55,4 @@ class ScrapingResult:
     processed_content: List[ProcessedContent]
     overall_summary: str
     top_trends: List[str]
+    descope_insights: Optional['DescopeInsights'] = None

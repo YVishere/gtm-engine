@@ -131,7 +131,13 @@ class VectorizedLLMProcessor:
     def generate_overall_summary(self, processed_contents: List[ProcessedContent]):
         """Generate enhanced summary using cluster analysis."""
         clusters = getattr(self, '_clusters', [])
-        return self.summary_generator.generate_overall_summary(processed_contents, clusters)
+        summary_data = self.summary_generator.generate_overall_summary(processed_contents, clusters)
+        
+        # Generate Descope-specific insights
+        descope_insights = self.summary_generator.generate_descope_insights(processed_contents, self.business_categorizer)
+        summary_data['descope_insights'] = descope_insights
+        
+        return summary_data
     
     def generate_opportunity_explanation(self, content: ProcessedContent) -> str:
         """Generate GTM-focused explanation for business opportunities."""

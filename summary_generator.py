@@ -203,6 +203,65 @@ IMPORTANT: Return only valid JSON without any additional text, thinking, or form
         print(f"   ✅ Extracted keywords from {len(cluster_keywords)} clusters")
         return cluster_keywords
     
+    def generate_descope_insights(self, processed_contents: List[ProcessedContent], business_categorizer) -> Dict[str, Any]:
+        """Generate Descope-specific business intelligence insights."""
+        print("🎯 Generating Descope-specific insights...")
+        
+        pain_point_totals = {}
+        competitor_totals = {}
+        migration_totals = {}
+        high_value_count = 0
+        total_analyzed = len(processed_contents)
+        
+        # Analyze all content for Descope insights
+        for content in processed_contents:
+            content_text = f"{content.original.title} {content.original.content}"
+            
+            # Collect pain points
+            pain_points = business_categorizer.analyze_descope_pain_points(content_text)
+            for pain_point, score in pain_points.items():
+                if score > 0.3:  # Significant pain point
+                    pain_point_totals[pain_point] = pain_point_totals.get(pain_point, 0) + 1
+            
+            # Collect competitor mentions
+            competitors = business_categorizer.detect_competitive_mentions(content_text)
+            for competitor, mentions in competitors.items():
+                competitor_totals[competitor] = competitor_totals.get(competitor, 0) + mentions
+            
+            # Check migration signals
+            migration_signals = business_categorizer.identify_migration_signals(content_text)
+            if migration_signals['migration_intent'] or migration_signals['dissatisfaction']:
+                # Categorize migration source
+                for competitor in business_categorizer.COMPETITOR_INDICATORS:
+                    if any(keyword in content_text.lower() for keyword in business_categorizer.COMPETITOR_INDICATORS[competitor]):
+                        migration_key = f"{competitor}_migration"
+                        migration_totals[migration_key] = migration_totals.get(migration_key, 0) + 1
+            
+            # Count high-value opportunities
+            if (content.original.score > 5 and  # High engagement
+                content.urgency_level == 'high' and  # High urgency
+                len(pain_points) > 0):  # Has pain points
+                high_value_count += 1
+        
+        # Calculate percentages for pain points
+        pain_point_percentages = {}
+        if total_analyzed > 0:
+            for pain_point, count in pain_point_totals.items():
+                percentage = (count / total_analyzed) * 100
+                pain_point_percentages[pain_point] = round(percentage, 1)
+        
+        # Format results
+        descope_insights = {
+            'pain_points': pain_point_percentages,
+            'competitive_intel': competitor_totals,
+            'migration_opportunities': migration_totals,
+            'total_discussions_analyzed': total_analyzed,
+            'high_value_opportunities': high_value_count
+        }
+        
+        print(f"   ✅ Analyzed {total_analyzed} discussions for Descope opportunities")
+        return descope_insights
+    
     def _generate_fallback_summary(self, top_items: List[ProcessedContent], processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
         """Fallback method for when no clusters are available."""
         high_priority_count = len([pc for pc in processed_contents if pc.urgency_level == 'high'])

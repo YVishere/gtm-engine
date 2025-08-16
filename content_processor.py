@@ -122,6 +122,52 @@ class ContentProcessor:
         
         return processed_items
     
+    def extract_descope_insights(self, contents: List[ScrapedContent], business_categorizer) -> Dict[str, Any]:
+        """Extract Descope-specific insights from content."""
+        pain_point_counts = {}
+        competitor_counts = {}
+        migration_opportunity_counts = {}
+        high_value_opportunities = 0
+        
+        for content in contents:
+            content_text = f"{content.title} {content.content}"
+            
+            # Analyze pain points
+            pain_points = business_categorizer.analyze_descope_pain_points(content_text)
+            for pain_point, score in pain_points.items():
+                if score > 0.3:  # Threshold for meaningful pain point detection
+                    pain_point_counts[pain_point] = pain_point_counts.get(pain_point, 0) + 1
+            
+            # Detect competitor mentions
+            competitors = business_categorizer.detect_competitive_mentions(content_text)
+            for competitor, mentions in competitors.items():
+                competitor_counts[competitor] = competitor_counts.get(competitor, 0) + mentions
+            
+            # Check for migration signals
+            migration_signals = business_categorizer.identify_migration_signals(content_text)
+            if migration_signals['migration_intent'] or migration_signals['dissatisfaction']:
+                # Identify source of migration
+                if any(comp in content_text.lower() for comp in ['auth0', 'okta']):
+                    migration_opportunity_counts['auth0_migration'] = migration_opportunity_counts.get('auth0_migration', 0) + 1
+                elif any(comp in content_text.lower() for comp in ['firebase', 'google auth']):
+                    migration_opportunity_counts['firebase_migration'] = migration_opportunity_counts.get('firebase_migration', 0) + 1
+                elif any(comp in content_text.lower() for comp in ['custom', 'homegrown', 'in-house']):
+                    migration_opportunity_counts['custom_migration'] = migration_opportunity_counts.get('custom_migration', 0) + 1
+            
+            # Count high-value opportunities (high urgency + pain points + migration intent)
+            if (content.score > 5 and  # High engagement
+                len(pain_points) > 0 and  # Has pain points
+                (migration_signals['migration_intent'] or migration_signals['evaluation_mode'])):
+                high_value_opportunities += 1
+        
+        return {
+            'pain_point_counts': pain_point_counts,
+            'competitor_counts': competitor_counts,
+            'migration_opportunity_counts': migration_opportunity_counts,
+            'high_value_opportunities': high_value_opportunities,
+            'total_analyzed': len(contents)
+        }
+    
     def generate_opportunity_explanation(self, content: ProcessedContent, business_categorizer) -> str:
         """Generate GTM-focused explanation for business opportunities."""
         # Use the business categorization logic
