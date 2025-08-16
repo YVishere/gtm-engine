@@ -1,4 +1,4 @@
-"""LLM processor using Ollama."""
+"""LLM processor using Ollama with optional vectorization."""
 
 import json
 import logging
@@ -12,7 +12,37 @@ from models import ScrapedContent, ProcessedContent, ScrapingResult
 from config import Config
 
 class LLMProcessor:
-    """Process scraped content using Ollama LLM with smart batching and progress tracking."""
+    """Process scraped content using Ollama LLM with optional vectorization."""
+
+    def __init__(self):
+        self.config = Config()
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
+        # Initialize the appropriate processor
+        if self.config.USE_VECTORIZATION:
+            try:
+                from vectorized_llm_processor import VectorizedLLMProcessor
+                self.processor = VectorizedLLMProcessor()
+                self.logger.info("Using vectorized LLM processor")
+            except ImportError as e:
+                self.logger.warning(f"Vectorization dependencies not available: {e}")
+                self.logger.info("Falling back to legacy LLM processor")
+                self.processor = LegacyLLMProcessor()
+        else:
+            self.processor = LegacyLLMProcessor()
+            self.logger.info("Using legacy LLM processor")
+
+    def process_content_batch(self, contents: List[ScrapedContent]) -> List[ProcessedContent]:
+        """Process a batch of scraped content."""
+        return self.processor.process_content_batch(contents)
+    
+    def generate_overall_summary(self, processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
+        """Generate overall summary."""
+        return self.processor.generate_overall_summary(processed_contents)
+
+
+class LegacyLLMProcessor:
+    """Original LLM processor for fallback compatibility."""
 
     def __init__(self):
         self.config = Config()

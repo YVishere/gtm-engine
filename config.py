@@ -40,6 +40,16 @@ class Config:
     MAX_RESULTS_PER_SOURCE = 50
     REQUEST_TIMEOUT = 10
 
+    # Vector Processing Settings
+    USE_VECTORIZATION = True
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # Fast, lightweight model
+    MIN_CLUSTER_SIZE = 3
+    CLUSTER_SIMILARITY_THRESHOLD = 0.75
+    REPRESENTATIVE_SAMPLE_SIZE = 1  # Per cluster
+    BATCH_EMBEDDING_SIZE = 100
+    MAX_CLUSTERS_TO_PROCESS = 20
+    UMAP_COMPONENTS = 50  # Dimensionality reduction
+
     # Keywords for authentication-related content
     AUTH_KEYWORDS = [
         'authentication', 'auth', 'login', 'session', 'jwt', 'oauth',
