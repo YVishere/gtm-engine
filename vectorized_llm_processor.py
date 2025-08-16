@@ -168,6 +168,9 @@ class VectorizedLLMProcessor:
         print("🔍 Phase 2: Clustering similar content...")
         clusters = self._cluster_contents(embeddings, contents)
         
+        # Store clusters for summary generation
+        self._clusters = clusters
+        
         # Phase 3: Smart batch processing
         print("🧠 Phase 3: Smart cluster processing...")
         processed_contents = self._process_clusters_smart(clusters, embeddings)
@@ -504,8 +507,75 @@ class VectorizedLLMProcessor:
         
         return self._cluster_analysis
     
+    def _extract_cluster_keywords_parallel(self, clusters: List[ClusterInfo]) -> List[Dict[str, Any]]:
+        """Extract keywords from each cluster in parallel using TF-IDF."""
+        from concurrent.futures import ThreadPoolExecutor
+        import threading
+        
+        def extract_keywords(cluster: ClusterInfo) -> Dict[str, Any]:
+            """Extract top keywords from a single cluster."""
+            try:
+                # Combine all text from cluster items
+                texts = []
+                for item in cluster.items:
+                    text = f"{item.title} {item.content[:500]}"  # Limit content length
+                    texts.append(text)
+                
+                combined_text = " ".join(texts)
+                
+                # TF-IDF extraction for meaningful keywords
+                vectorizer = TfidfVectorizer(
+                    max_features=25,  # Top 25 keywords per cluster
+                    stop_words='english',
+                    ngram_range=(1, 2),  # Include bigrams for better context
+                    min_df=1,
+                    max_df=0.95
+                )
+                
+                if len(combined_text.strip()) == 0:
+                    keywords = ['authentication', 'security']  # Fallback
+                else:
+                    tfidf_matrix = vectorizer.fit_transform([combined_text])
+                    feature_names = vectorizer.get_feature_names_out()
+                    scores = tfidf_matrix.toarray()[0]
+                    
+                    # Get top keywords with scores
+                    keyword_scores = list(zip(feature_names, scores))
+                    keyword_scores.sort(key=lambda x: x[1], reverse=True)
+                    keywords = [kw[0] for kw in keyword_scores[:20]]  # Top 20
+                
+                return {
+                    'cluster_id': cluster.id,
+                    'size': cluster.size,
+                    'theme': cluster.theme,
+                    'keywords': keywords,
+                    'category': cluster.category,
+                    'urgency': cluster.urgency_level,
+                    'representative_title': cluster.representative_item.title
+                }
+                
+            except Exception as e:
+                self.logger.warning(f"Error extracting keywords from cluster {cluster.id}: {e}")
+                return {
+                    'cluster_id': cluster.id,
+                    'size': cluster.size,
+                    'theme': cluster.theme,
+                    'keywords': ['authentication', 'security'],
+                    'category': cluster.category,
+                    'urgency': cluster.urgency_level,
+                    'representative_title': cluster.representative_item.title
+                }
+        
+        # Process clusters in parallel
+        print(f"   ⚡ Processing {len(clusters)} clusters with {min(8, len(clusters))} workers...")
+        with ThreadPoolExecutor(max_workers=min(8, len(clusters))) as executor:
+            cluster_keywords = list(executor.map(extract_keywords, clusters))
+        
+        print(f"   ✅ Extracted keywords from {len(cluster_keywords)} clusters")
+        return cluster_keywords
+    
     def generate_overall_summary(self, processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
-        """Generate enhanced summary using cluster analysis and LLM."""
+        """Generate enhanced summary using ALL clusters with bag-of-words approach."""
         if not processed_contents:
             return {
                 'overall_summary': 'No relevant content found.',
@@ -513,66 +583,78 @@ class VectorizedLLMProcessor:
                 'high_priority_items': 0
             }
         
-        print(f"\n📈 Generating cluster-based executive summary...")
+        print(f"\n📈 Generating cluster-based executive summary using ALL clusters...")
         
-        # Use cluster analysis for better insights
-        cluster_data = getattr(self, '_cluster_analysis', {})
+        # Use ALL clusters instead of just top 15 items
+        clusters = getattr(self, '_clusters', [])
+        if not clusters:
+            # Fallback to old approach if no clusters available
+            cluster_data = getattr(self, '_cluster_analysis', {})
+            top_items = sorted(processed_contents, key=lambda x: x.relevance_score, reverse=True)[:15]
+            return self._generate_fallback_summary(top_items, processed_contents)
         
-        # Get top items for LLM analysis
-        top_items = sorted(processed_contents, key=lambda x: x.relevance_score, reverse=True)[:15]
+        print(f"   🔄 Extracting keywords from {len(clusters)} clusters in parallel...")
         
-        # Create rich context for LLM summary generation
-        content_snippets = []
-        urgency_items = []
+        # Extract bag-of-words from ALL clusters in parallel
+        cluster_keywords = self._extract_cluster_keywords_parallel(clusters)
         
-        for pc in top_items:
-            title = pc.original.title
-            source = pc.original.source.value
-            content_snippets.append(f"[{source.upper()}] {title}: {pc.summary}")
-            
-            if pc.urgency_level == 'high':
-                urgency_items.append(f"• {title} (from {source})")
-        
+        # Generate comprehensive summary using ALL cluster data
         high_priority_count = len([pc for pc in processed_contents if pc.urgency_level == 'high'])
         total_items = len(processed_contents)
         
-        # Use LLM for better summary generation
+        print(f"   🧠 Generating executive summary from {len(cluster_keywords)} clusters...")
+        
+        # Use LLM with ALL cluster context
         try:
             from llm_processor import LegacyLLMProcessor
             legacy_processor = LegacyLLMProcessor()
             
-            # Create context for the LLM similar to the original working version
+            # Create cluster context for the LLM
+            cluster_context = []
+            high_urgency_clusters = []
+            
+            for ck in cluster_keywords:
+                urgency_indicator = "🔥 HIGH" if ck['urgency'] == 'high' else "📊 MED" if ck['urgency'] == 'medium' else "📋 LOW"
+                cluster_desc = f"Cluster {ck['cluster_id']} ({ck['size']} discussions, {urgency_indicator}): {ck['theme']} [{ck['category']}] - Key terms: {', '.join(ck['keywords'][:15])}"
+                cluster_context.append(cluster_desc)
+                
+                if ck['urgency'] == 'high':
+                    high_urgency_clusters.append(f"• {ck['theme']} ({ck['size']} discussions): {ck['representative_title']}")
+            
+            # Context summary
             context_data = {
                 'total_analyzed': total_items,
-                'high_relevance': len([pc for pc in processed_contents if pc.relevance_score > 0.7]),
+                'total_clusters': len(cluster_keywords),
+                'high_urgency_clusters': len(high_urgency_clusters),
                 'sources': list(set([pc.original.source.value for pc in processed_contents])),
                 'high_priority_count': high_priority_count
             }
             
-            # Use the exact same prompt structure that was working before
-            prompt = f"""You are analyzing authentication and security discussions for business intelligence. Based on the following content analysis, generate insights for a GTM (Go-To-Market) team.
+            # Enhanced prompt using ALL cluster data
+            prompt = f"""You are analyzing authentication and security discussions for business intelligence. Based on comprehensive cluster analysis of ALL {len(cluster_keywords)} conversation clusters, generate insights for a GTM (Go-To-Market) team.
 
-CONTENT ANALYSIS ({len(content_snippets)} top items):
-{chr(10).join(content_snippets)}
+COMPREHENSIVE CLUSTER ANALYSIS ({len(cluster_keywords)} clusters covering {total_items} discussions):
+{chr(10).join(cluster_context)}
 
-HIGH PRIORITY ITEMS REQUIRING ATTENTION:
-{chr(10).join(urgency_items) if urgency_items else "None identified"}
+HIGH-URGENCY CLUSTERS REQUIRING IMMEDIATE ATTENTION:
+{chr(10).join(high_urgency_clusters) if high_urgency_clusters else "None identified"}
 
-CONTEXT:
+ANALYSIS CONTEXT:
 - Total discussions analyzed: {context_data['total_analyzed']}
-- High-relevance items: {context_data['high_relevance']}
-- Sources: {', '.join(context_data['sources'])}
-- High-priority alerts: {context_data['high_priority_count']}
+- Conversation clusters identified: {context_data['total_clusters']}
+- High-urgency clusters: {context_data['high_urgency_clusters']}
+- Data sources: {', '.join(context_data['sources'])}
+- High-priority items: {context_data['high_priority_count']}
 
 Generate a comprehensive business intelligence summary focusing on:
-1. What authentication challenges developers are facing RIGHT NOW
-2. Which technologies/approaches are trending and causing problems
-3. Specific business opportunities for auth solution providers like Descope
+1. What authentication challenges developers are facing RIGHT NOW based on cluster patterns
+2. Which technologies/approaches are trending and causing problems across clusters
+3. Specific business opportunities for auth solution providers like Descope based on cluster themes
 4. Market sentiment and developer pain points that indicate buying intent
 
 Return your analysis in this exact JSON format:
 {{
-    "overall_summary": "Comprehensive 3-4 sentence executive summary highlighting: (1) key authentication challenges developers face, (2) trending technologies causing issues, (3) business opportunities for auth providers, and (4) market sentiment indicating purchase intent",
+    "overall_summary": "Comprehensive 3-4 sentence executive summary highlighting: (1) key authentication challenges developers face across {len(cluster_keywords)} conversation clusters, (2) trending technologies causing issues, (3) business opportunities for auth providers, and (4) market sentiment indicating purchase intent",
     "top_trends": ["Trend 1: Specific technical challenge developers are discussing with business context", "Trend 2: Another key technology pattern or implementation issue", "Trend 3: Market sentiment or pain point indicating sales opportunity", "Trend 4: Emerging technology adoption or integration challenge", "Trend 5: Developer behavior pattern suggesting vendor evaluation"],
     "high_priority_items": {context_data['high_priority_count']}
 }}
@@ -589,8 +671,15 @@ IMPORTANT: Return only valid JSON without any additional text, thinking, or form
         except Exception as e:
             self.logger.warning(f"LLM summary generation failed: {e}")
         
-        # Enhanced fallback using the same logic as the original processor
-        print("   ⚠️  Using enhanced fallback summary with real insights")
+        # Enhanced fallback using cluster data instead of top items
+        print("   ⚠️  Using enhanced cluster-based fallback summary")
+        return self._generate_cluster_based_fallback_summary(cluster_keywords, processed_contents)
+    
+    def _generate_fallback_summary(self, top_items: List[ProcessedContent], processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
+        """Fallback method for when no clusters are available."""
+        # This is the old approach, kept for backward compatibility
+        high_priority_count = len([pc for pc in processed_contents if pc.urgency_level == 'high'])
+        total_items = len(processed_contents)
         
         # Generate basic insights from actual data (like original processor)
         common_issues = []
@@ -657,7 +746,94 @@ IMPORTANT: Return only valid JSON without any additional text, thinking, or form
             'high_priority_items': high_priority_count
         }
         
-        print("   ✅ Enhanced cluster-based executive summary generated")
+        print("   ✅ Enhanced fallback executive summary generated")
+        return result
+    
+    def _generate_cluster_based_fallback_summary(self, cluster_keywords: List[Dict[str, Any]], processed_contents: List[ProcessedContent]) -> Dict[str, Any]:
+        """Generate fallback summary using cluster keywords when LLM fails."""
+        high_priority_count = len([pc for pc in processed_contents if pc.urgency_level == 'high'])
+        total_items = len(processed_contents)
+        
+        print(f"   🔧 Generating enhanced fallback from {len(cluster_keywords)} clusters...")
+        
+        # Extract insights from cluster data
+        high_urgency_clusters = [ck for ck in cluster_keywords if ck['urgency'] == 'high']
+        top_themes = []
+        
+        # Analyze cluster themes and keywords
+        all_keywords = []
+        cluster_sizes = []
+        for ck in cluster_keywords:
+            top_themes.append(ck['theme'])
+            all_keywords.extend(ck['keywords'][:5])  # Top 5 keywords per cluster
+            cluster_sizes.append(ck['size'])
+        
+        # Count keyword frequency for trends
+        from collections import Counter
+        keyword_counts = Counter(all_keywords)
+        top_keywords = keyword_counts.most_common(10)
+        
+        # Generate business-focused summary
+        avg_cluster_size = sum(cluster_sizes) / len(cluster_sizes) if cluster_sizes else 0
+        large_clusters = len([size for size in cluster_sizes if size > avg_cluster_size * 1.5])
+        
+        overall_summary = f'Authentication intelligence analysis identified {len(cluster_keywords)} distinct conversation clusters across {total_items} developer discussions, revealing {len(high_urgency_clusters)} high-urgency technical challenges requiring immediate vendor consultation. Cluster analysis shows concentrated developer activity around {top_keywords[0][0] if top_keywords else "authentication"} and {top_keywords[1][0] if len(top_keywords) > 1 else "security"} implementations, with {large_clusters} clusters showing significant community engagement. Market sentiment indicates strong demand for enterprise authentication solutions that address implementation complexity while maintaining security standards.'
+        
+        # Generate trends from cluster analysis
+        enhanced_trends = []
+        
+        # Theme-based trends
+        theme_analysis = {}
+        for ck in cluster_keywords:
+            theme_lower = ck['theme'].lower()
+            if 'jwt' in theme_lower:
+                theme_analysis['jwt'] = theme_analysis.get('jwt', 0) + ck['size']
+            elif 'oauth' in theme_lower:
+                theme_analysis['oauth'] = theme_analysis.get('oauth', 0) + ck['size']
+            elif 'spring' in theme_lower:
+                theme_analysis['spring'] = theme_analysis.get('spring', 0) + ck['size']
+            elif 'session' in theme_lower:
+                theme_analysis['session'] = theme_analysis.get('session', 0) + ck['size']
+            elif any(keyword in theme_lower for keyword in ['error', '401', '403', 'security']):
+                theme_analysis['security'] = theme_analysis.get('security', 0) + ck['size']
+        
+        if theme_analysis.get('jwt', 0) > 0:
+            enhanced_trends.append(f"JWT Implementation Crisis: {theme_analysis['jwt']} developers across {len([ck for ck in cluster_keywords if 'jwt' in ck['theme'].lower()])} clusters struggling with token management")
+        
+        if theme_analysis.get('oauth', 0) > 0:
+            enhanced_trends.append(f"OAuth2 Integration Complexity: {theme_analysis['oauth']} discussions showing active provider evaluation and implementation challenges")
+        
+        if theme_analysis.get('spring', 0) > 0:
+            enhanced_trends.append(f"Spring Security Configuration: {theme_analysis['spring']} developers facing framework-specific authentication implementation issues")
+        
+        if theme_analysis.get('session', 0) > 0:
+            enhanced_trends.append(f"Session Management Scaling: {theme_analysis['session']} conversations about distributed authentication and persistence challenges")
+        
+        if theme_analysis.get('security', 0) > 0:
+            enhanced_trends.append(f"Authentication Security Concerns: {theme_analysis['security']} developers dealing with vulnerability prevention and error resolution")
+        
+        # Add high-urgency insights
+        if len(high_urgency_clusters) > 0:
+            urgency_themes = [ck['theme'] for ck in high_urgency_clusters]
+            enhanced_trends.append(f"High-Priority Consultation Opportunities: {len(high_urgency_clusters)} urgent clusters covering {', '.join(urgency_themes[:3])} requiring immediate vendor engagement")
+        
+        # Fill with generic trends if needed
+        fallback_trends = [
+            "Enterprise Authentication Demand: Growing adoption of comprehensive auth solutions for microservices architectures",
+            "Developer Experience Priority: Strong preference for authentication platforms that reduce implementation complexity",
+            "Security-First Mindset: Increased focus on compliance-ready authentication with vulnerability prevention"
+        ]
+        
+        while len(enhanced_trends) < 5 and fallback_trends:
+            enhanced_trends.append(fallback_trends.pop(0))
+        
+        result = {
+            'overall_summary': overall_summary,
+            'top_trends': enhanced_trends[:5],
+            'high_priority_items': high_priority_count
+        }
+        
+        print("   ✅ Enhanced cluster-based fallback summary generated")
         return result
     
     def _generate_semantic_trends(self, cluster_data: Dict[str, Any]) -> List[str]:
