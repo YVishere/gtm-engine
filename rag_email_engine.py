@@ -1,4 +1,4 @@
-"""RAG-enhanced email generation engine for GitHub context discovery."""
+"""RAG-enhanced email generation engine with comprehensive transparency and analytics."""
 
 import json
 import logging
@@ -10,39 +10,16 @@ from dataclasses import dataclass, asdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
-from models import ProcessedContent
+from models import ProcessedContent, EmailSolution, GitHubDiscoveryAction
 from config import Config
 from llm_processor import LLMProcessor
 from llm_integration import RAGLLMIntegration
-
-@dataclass
-class RAGSearchPurpose:
-    """RAG model's decision on what to search for"""
-    primary_purpose: str
-    technologies: List[str]
-    search_strategy: str
-    urgency_context: str
-
-@dataclass
-class GitHubDiscoveryAction:
-    """Action taken by RAG for repository discovery"""
-    repository_name: str
-    purpose: str
-    relevance_score: float
-    files_analyzed: List[str]
-    code_snippets_found: int
-
-@dataclass
-class EmailSolution:
-    """Complete email solution with original query"""
-    original_user_query: str
-    email_content: str
-    github_actions: List[GitHubDiscoveryAction]
-    confidence_score: float
-    generated_timestamp: str
+from enhanced_purpose_engine import TransparentRAGPurposeEngine, EnhancedRAGPurpose
+from action_transparency import RAGActionTracker, TransparentCommunicator
+from enhanced_analytics import RAGAnalyticsEngine
 
 class RAGEmailEngine:
-    """Main RAG engine for GitHub-enhanced email generation"""
+    """Enhanced RAG engine with comprehensive transparency and analytics"""
     
     def __init__(self, github_token: str):
         self.github_token = github_token
@@ -54,6 +31,12 @@ class RAGEmailEngine:
         self.llm_processor = LLMProcessor()
         self.llm_integration = RAGLLMIntegration(self.llm_processor)
         
+        # Initialize enhanced components
+        self.purpose_engine = TransparentRAGPurposeEngine(self.llm_integration)
+        self.action_tracker = RAGActionTracker()
+        self.analytics_engine = RAGAnalyticsEngine()
+        self.communicator = TransparentCommunicator()
+        
         # Test LLM integration on initialization
         if self.llm_integration.test_llm_integration():
             self.logger.info("LLM integration test passed")
@@ -63,8 +46,162 @@ class RAGEmailEngine:
         # Ensure emails directory exists
         os.makedirs("emails", exist_ok=True)
         os.makedirs("emails/logs", exist_ok=True)
+        os.makedirs("logs", exist_ok=True)
+        os.makedirs("reports", exist_ok=True)
     
-    def determine_search_purpose(self, opportunity: ProcessedContent) -> RAGSearchPurpose:
+    def generate_rag_email_solutions(self, opportunities: List[ProcessedContent]) -> None:
+        """Generate enhanced RAG email solutions with full transparency"""
+        
+        print(f"\n🚀 ENHANCED RAG EMAIL GENERATION STARTING...")
+        print(f"   📊 Processing {len(opportunities)} opportunities with full transparency")
+        
+        # Start analytics session
+        session_data = self.analytics_engine.session_logger.session_data
+        
+        for i, opportunity in enumerate(opportunities):
+            print(f"\n📧 Processing Opportunity {i+1}/{len(opportunities)}")
+            
+            try:
+                # Step 1: Enhanced Purpose Detection with Transparency
+                purpose = self.determine_enhanced_purpose(opportunity, i)
+                self.analytics_engine.session_logger.log_opportunity_processing(i, purpose)
+                
+                # Step 2: Transparent Repository Discovery
+                github_actions = self.discover_with_enhanced_purpose(opportunity, purpose)
+                
+                # Step 3: Enhanced Email Generation
+                email_solution = self.generate_enhanced_email_solution(opportunity, github_actions, purpose)
+                self.analytics_engine.session_logger.log_email_generation(i, email_solution)
+                
+                # Step 4: Save Email Solution
+                self.save_email_solution(email_solution, i+1)
+                
+            except Exception as e:
+                self.logger.error(f"Error processing opportunity {i+1}: {e}")
+                print(f"   ❌ Error: {e}")
+        
+        # Generate comprehensive analytics report
+        self.analytics_engine.session_logger.finalize_session()
+        comprehensive_report = self.analytics_engine.generate_comprehensive_report(session_data, self.action_tracker)
+        
+        print(f"\n✅ ENHANCED RAG EMAIL GENERATION COMPLETE!")
+        print(f"   📊 Generated {len(opportunities)} email solutions with full analytics")
+    
+    def determine_enhanced_purpose(self, opportunity: ProcessedContent, opportunity_index: int) -> EnhancedRAGPurpose:
+        """Enhanced purpose detection with transparency and reasoning"""
+        
+        print(f"\n🎯 ENHANCED PURPOSE DETECTION (Opportunity {opportunity_index+1})")
+        
+        # Use enhanced purpose engine
+        enhanced_purpose = self.purpose_engine.generate_purpose_with_reasoning(opportunity)
+        
+        # Announce the decision with transparency
+        self.communicator.announce_purpose_decision(enhanced_purpose)
+        
+        return enhanced_purpose
+    
+    def discover_with_enhanced_purpose(self, opportunity: ProcessedContent, purpose: EnhancedRAGPurpose) -> List[GitHubDiscoveryAction]:
+        """Enhanced repository discovery with action tracking"""
+        
+        print(f"\n🔍 ENHANCED REPOSITORY DISCOVERY")
+        
+        # Track search actions transparently
+        search_queries = self.build_enhanced_purpose_queries(purpose)
+        discovered_repos = []
+        
+        for query in search_queries:
+            # Track search action
+            search_action = self.action_tracker.track_search_action(
+                query, 'repositories', purpose,
+                language=purpose.technologies[0] if purpose.technologies else None,
+                sort='stars',
+                order='desc'
+            )
+            
+            # Execute search
+            repos = self.search_github_repositories(query, purpose.technologies[0] if purpose.technologies else None)
+            
+            # Assess search outcome
+            outcome_assessment = self.action_tracker.assess_action_outcome(
+                f"search_{len(self.action_tracker.search_actions)}",
+                f"Find {purpose.success_criteria.get('minimum_repositories', 3)} relevant repositories",
+                f"Found {len(repos)} repositories",
+                {'found_repositories': len(repos), 'relevance_score': 0.7}
+            )
+            
+            discovered_repos.extend(repos)
+        
+        # Analyze repositories with transparency
+        github_actions = []
+        for repo in discovered_repos[:5]:  # Top 5 repositories
+            
+            # Track repository analysis action
+            repo_action = self.action_tracker.track_repository_action(
+                repo['full_name'], 'auth_patterns', purpose,
+                target_files=purpose.expected_file_patterns[:3]
+            )
+            
+            # Analyze repository
+            files_analyzed, code_snippets = self.analyze_repository_enhanced(repo, purpose)
+            relevance_score = self.calculate_enhanced_relevance(repo, purpose)
+            
+            github_action = GitHubDiscoveryAction(
+                repository_name=repo['full_name'],
+                purpose=f"Analyze for {purpose.primary_purpose}",
+                relevance_score=relevance_score,
+                files_analyzed=files_analyzed,
+                code_snippets_found=len(code_snippets),
+                repository_stats={
+                    'stars': repo.get('stargazers_count', 0),
+                    'forks': repo.get('forks_count', 0),
+                    'language': repo.get('language', 'Unknown'),
+                    'updated': repo.get('updated_at', 'Unknown')
+                },
+                analysis_summary=f"Found {len(code_snippets)} relevant code patterns"
+            )
+            
+            github_actions.append(github_action)
+        
+        # Announce discovery results
+        self.communicator.announce_discovery_results(github_actions, purpose)
+        
+        return github_actions
+    
+    def generate_enhanced_email_solution(self, opportunity: ProcessedContent, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> EmailSolution:
+        """Generate enhanced email solution with improved context"""
+        
+        print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION")
+        
+        # Build comprehensive GitHub context
+        github_context = self.build_enhanced_github_context(github_actions, purpose)
+        
+        # Original user query
+        original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
+        
+        # Generate enhanced email content
+        email_content = self.generate_enhanced_email_content(original_query, github_context, purpose, github_actions)
+        
+        # Calculate enhanced confidence score
+        confidence_score = self.calculate_enhanced_confidence(github_actions, purpose, opportunity)
+        
+        return EmailSolution(
+            original_query=original_query,
+            email_content=email_content,
+            github_actions=github_actions,
+            confidence_score=confidence_score,
+            solution_quality=self.assess_solution_quality(github_actions, purpose),
+            generated_timestamp=datetime.now().isoformat(),
+            purpose_reasoning=purpose.reasoning,
+            success_metrics={
+                'repositories_found': len(github_actions),
+                'average_relevance': sum(action.relevance_score for action in github_actions) / len(github_actions) if github_actions else 0,
+                'technology_coverage': len(purpose.technologies),
+                'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0
+            }
+        )
+    
+    # Legacy method compatibility - now calls enhanced methods
+    def determine_search_purpose(self, opportunity: ProcessedContent) -> EnhancedRAGPurpose:
         """RAG model intelligently determines search purpose"""
         
         question_text = f"{opportunity.original.title} {opportunity.original.content}"

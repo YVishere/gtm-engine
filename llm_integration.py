@@ -38,7 +38,9 @@ class LLMProcessorAnalyzer:
         if processor_type == 'LegacyLLMProcessor':
             return 'direct_ollama'
         elif processor_type == 'VectorizedLLMProcessor':
-            return 'legacy_fallback'
+            # VectorizedLLMProcessor uses internal components that create LegacyLLMProcessor
+            # We should use the same pattern as SummaryGenerator and ContentProcessor
+            return 'vectorized_internal'
         else:
             return 'wrapper_method'
     
@@ -52,10 +54,12 @@ class LLMProcessorAnalyzer:
                 # Direct call to LegacyLLMProcessor
                 return self.llm_processor.processor._call_ollama(prompt)
                 
-            elif approach == 'legacy_fallback':
-                # VectorizedLLMProcessor - create legacy processor for LLM calls
-                legacy_processor = LegacyLLMProcessor()
-                return legacy_processor._call_ollama(prompt)
+            elif approach == 'vectorized_internal':
+                # VectorizedLLMProcessor - use the same pattern as its internal components
+                # Create LegacyLLMProcessor like SummaryGenerator does
+                from llm_processor import LegacyLLMProcessor
+                internal_processor = LegacyLLMProcessor()
+                return internal_processor._call_ollama(prompt)
                 
             elif approach == 'wrapper_method':
                 # Use processor wrapper method if available
@@ -115,6 +119,22 @@ class RAGLLMIntegration:
             
         self.logger.info("Successfully generated purpose via LLM")
         return parsed_result
+    
+    def generate_email_with_llm(self, prompt: str) -> str:
+        """Generate email content using proper LLM integration."""
+        
+        self.logger.info(f"Generating email via {self.analyzer.capabilities['recommended_approach']} approach")
+        
+        # Make the LLM call using the proper method
+        response = self.analyzer.call_llm_properly(prompt)
+        
+        if not response:
+            self.logger.warning("LLM returned empty response for email generation")
+            return ""
+            
+        # For email generation, we expect plain text response, not JSON
+        self.logger.info("Successfully generated email content via LLM")
+        return response.strip()
     
     def test_llm_integration(self) -> bool:
         """Test if LLM integration is working properly."""

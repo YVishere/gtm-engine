@@ -1,8 +1,8 @@
-"""Data models for the webscraper."""
+"""Data models for the webscraper with enhanced RAG capabilities."""
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from enum import Enum
 
 class SourceType(Enum):
@@ -56,3 +56,36 @@ class ScrapingResult:
     overall_summary: str
     top_trends: List[str]
     descope_insights: Optional['DescopeInsights'] = None
+
+# Enhanced RAG Models
+
+@dataclass
+class GitHubDiscoveryAction:
+    """Enhanced action taken by RAG for repository discovery"""
+    repository_name: str
+    purpose: str
+    relevance_score: float
+    files_analyzed: List[str]
+    code_snippets_found: int
+    repository_stats: Dict[str, Any] = None
+    analysis_summary: str = ""
+
+    def __post_init__(self):
+        if self.repository_stats is None:
+            self.repository_stats = {}
+
+@dataclass  
+class EmailSolution:
+    """Enhanced email solution with comprehensive metadata"""
+    original_query: str
+    email_content: str
+    github_actions: List[GitHubDiscoveryAction]
+    confidence_score: float
+    generated_timestamp: str
+    solution_quality: str = "medium_quality"  # low_quality, medium_quality, high_quality
+    purpose_reasoning: Optional[Any] = None  # OpportunityAnalysis from enhanced_purpose_engine
+    success_metrics: Dict[str, Any] = None
+
+    def __post_init__(self):
+        if self.success_metrics is None:
+            self.success_metrics = {}
