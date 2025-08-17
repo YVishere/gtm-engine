@@ -19,6 +19,7 @@ from llm_search_strategist import LLMSearchStrategist, LLMSearchStrategy, Reposi
 from enhanced_action_transparency import LLMDrivenActionTracker, EnhancedTransparentCommunicator, SearchExecutionResult, RepositoryAnalysisResult
 from llm_outcome_assessor import LLMOutcomeAssessor, OutcomeAssessment
 from enhanced_analytics import RAGAnalyticsEngine
+from llm_decision_engine import LLMDecisionEngine
 
 
 class EnhancedRAGEmailEngine:
@@ -41,6 +42,9 @@ class EnhancedRAGEmailEngine:
         self.outcome_assessor = LLMOutcomeAssessor(self.llm_integration)
         self.analytics_engine = RAGAnalyticsEngine()
         self.communicator = EnhancedTransparentCommunicator()
+        
+        # Initialize LLM Decision Engine for quality improvements
+        self.llm_decision_engine = LLMDecisionEngine(self.llm_integration)
         
         # Test LLM integration on initialization
         if self.llm_integration.test_llm_integration():
@@ -583,44 +587,70 @@ class EnhancedRAGEmailEngine:
         return self._convert_search_to_github_actions(repos[:3], purpose)
     
     def generate_enhanced_email_solution(self, opportunity: ProcessedContent, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> EmailSolution:
-        """FIXED: Generate email solution with relevance gate to prevent irrelevant emails"""
+        """ENHANCED: Generate email solution with LLM-driven decisions for quality improvements"""
         
-        print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION")
+        print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION WITH LLM DECISIONS")
         
-        # CRITICAL FIX: Add relevance gate
         original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
         
-        # Determine if this actually needs an authentication email
-        needs_auth_solution = self._determine_auth_need_from_purpose(purpose, original_query)
-        actual_topic = self._extract_actual_topic_from_purpose(purpose, original_query)
+        # PHASE 1: LLM-driven technology detection
+        print(f"🤖 Phase 1: LLM Technology Detection")
+        llm_tech_analysis = self.llm_decision_engine.llm_technology_detection(original_query)
+        print(f"   📋 LLM Detected Technologies: {llm_tech_analysis.get('primary_technologies', [])}")
+        print(f"   🔍 LLM Reasoning: {llm_tech_analysis.get('reasoning', 'No reasoning provided')}")
         
-        # Calculate relevance for email generation
-        relevance_score = self._calculate_email_relevance(purpose, needs_auth_solution, github_actions)
+        # PHASE 2: LLM-driven problem classification  
+        print(f"🤖 Phase 2: LLM Problem Classification")
+        llm_problem_analysis = self.llm_decision_engine.llm_problem_classification(original_query)
+        print(f"   📂 LLM Problem Type: {llm_problem_analysis.get('problem_type', 'general_consultation')}")
+        print(f"   🎯 LLM Confidence: {llm_problem_analysis.get('confidence', 0):.2f}")
         
-        # RELEVANCE GATE: Block irrelevant emails
-        if not self._should_send_email(purpose, needs_auth_solution, relevance_score, actual_topic):
-            print(f"🚫 EMAIL BLOCKED: Not relevant for {actual_topic} (Auth needed: {needs_auth_solution})")
-            print(f"   📊 Relevance score: {relevance_score:.2f} (threshold: 0.5)")
+        # PHASE 3: LLM-driven email relevance assessment
+        print(f"🤖 Phase 3: LLM Email Relevance Assessment")
+        llm_relevance_analysis = self.llm_decision_engine.llm_email_relevance_assessment(
+            original_query, 
+            llm_tech_analysis.get('primary_technologies', []),
+            llm_problem_analysis.get('problem_type', 'general_consultation')
+        )
+        print(f"   📊 LLM Relevance Score: {llm_relevance_analysis.get('relevance_score', 0):.2f}")
+        print(f"   💼 LLM Business Value: {llm_relevance_analysis.get('business_value', 'unknown')}")
+        
+        # DECISION GATE: Use LLM assessment for email blocking
+        if not llm_relevance_analysis.get('should_send_email', False):
+            print(f"🚫 LLM DECISION: Email blocked")
+            print(f"   🤖 LLM Reasoning: {llm_relevance_analysis.get('reasoning', 'No reasoning provided')}")
+            print(f"   🚨 Auth Signals: {llm_relevance_analysis.get('auth_signals', [])}")
+            print(f"   ❌ Non-Auth Signals: {llm_relevance_analysis.get('non_auth_signals', [])}")
             
-            # Return filtered result instead of email
+            # Track LLM performance
+            self.llm_decision_engine.track_llm_performance('email_relevance', llm_relevance_analysis)
+            
             return EmailSolution(
                 original_query=original_query,
-                email_content=None,  # No email generated
+                email_content=None,
                 github_actions=github_actions,
                 confidence_score=0.0,
-                solution_quality="filtered_irrelevant",
+                solution_quality="llm_filtered_irrelevant",
                 generated_timestamp=datetime.now().isoformat(),
                 purpose_reasoning=purpose.reasoning,
                 success_metrics={
-                    'filter_decision': f'Email blocked for {actual_topic}',
-                    'filter_reason': f'Authentication email not relevant for {purpose.reasoning.problem_type if purpose.reasoning else "unknown"} problem',
-                    'relevance_score': relevance_score,
-                    'needs_auth_solution': needs_auth_solution
+                    'llm_decision': 'blocked',
+                    'llm_reasoning': llm_relevance_analysis.get('reasoning'),
+                    'llm_relevance_score': llm_relevance_analysis.get('relevance_score'),
+                    'llm_tech_detected': llm_tech_analysis.get('primary_technologies'),
+                    'llm_problem_type': llm_problem_analysis.get('problem_type'),
+                    'llm_business_value': llm_relevance_analysis.get('business_value'),
+                    'llm_auth_signals': llm_relevance_analysis.get('auth_signals', []),
+                    'llm_non_auth_signals': llm_relevance_analysis.get('non_auth_signals', [])
                 }
             )
         
-        print(f"✅ EMAIL APPROVED: Relevant for {actual_topic} (Auth needed: {needs_auth_solution})")
-        print(f"   📊 Relevance score: {relevance_score:.2f}")
+        print(f"✅ LLM DECISION: Email approved")
+        print(f"   🤖 LLM Reasoning: {llm_relevance_analysis.get('reasoning', 'No reasoning provided')}")
+        print(f"   🎯 Auth Signals: {llm_relevance_analysis.get('auth_signals', [])}")
+        
+        # Track LLM performance
+        self.llm_decision_engine.track_llm_performance('email_relevance', llm_relevance_analysis)
         
         # Build comprehensive GitHub context
         github_context = self.build_enhanced_github_context(github_actions, purpose)
@@ -644,8 +674,11 @@ class EnhancedRAGEmailEngine:
                 'average_relevance': sum(action.relevance_score for action in github_actions) / len(github_actions) if github_actions else 0,
                 'technology_coverage': len(purpose.technologies),
                 'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0,
-                'email_approved': True,
-                'relevance_score': relevance_score
+                'llm_email_approved': True,
+                'llm_relevance_score': llm_relevance_analysis.get('relevance_score'),
+                'llm_tech_detected': llm_tech_analysis.get('primary_technologies'),
+                'llm_problem_type': llm_problem_analysis.get('problem_type'),
+                'llm_business_value': llm_relevance_analysis.get('business_value')
             }
         )
     

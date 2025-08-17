@@ -86,7 +86,27 @@ class TransparentRAGPurposeEngine:
         )
     
     def extract_technologies_with_confidence(self, question_text: str, topics: List[str]) -> List[str]:
-        """Extract technologies with confidence scoring - FIXED: No authentication bias"""
+        """Extract technologies with LLM enhancement and pattern matching fallback"""
+        
+        # Try LLM-based detection first if LLM integration is available
+        if hasattr(self.llm_integration, 'generate_purpose_with_llm'):
+            try:
+                # Create a simple LLM decision engine instance for tech detection
+                from llm_decision_engine import LLMDecisionEngine
+                llm_decision_engine = LLMDecisionEngine(self.llm_integration)
+                
+                llm_result = llm_decision_engine.llm_technology_detection(question_text)
+                if llm_result and llm_result.get('primary_technologies'):
+                    self.logger.info(f"LLM detected technologies: {llm_result['primary_technologies']}")
+                    return llm_result['primary_technologies']
+            except Exception as e:
+                self.logger.warning(f"LLM tech detection failed, using fallback: {e}")
+        
+        # Fallback to existing pattern matching
+        return self._pattern_based_tech_detection(question_text, topics)
+    
+    def _pattern_based_tech_detection(self, question_text: str, topics: List[str]) -> List[str]:
+        """Pattern-based technology detection as fallback"""
         
         # Comprehensive technology patterns without bias
         tech_patterns = {
