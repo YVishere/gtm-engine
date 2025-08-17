@@ -583,15 +583,47 @@ class EnhancedRAGEmailEngine:
         return self._convert_search_to_github_actions(repos[:3], purpose)
     
     def generate_enhanced_email_solution(self, opportunity: ProcessedContent, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> EmailSolution:
-        """Generate enhanced email solution with improved context"""
+        """FIXED: Generate email solution with relevance gate to prevent irrelevant emails"""
         
         print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION")
         
+        # CRITICAL FIX: Add relevance gate
+        original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
+        
+        # Determine if this actually needs an authentication email
+        needs_auth_solution = self._determine_auth_need_from_purpose(purpose, original_query)
+        actual_topic = self._extract_actual_topic_from_purpose(purpose, original_query)
+        
+        # Calculate relevance for email generation
+        relevance_score = self._calculate_email_relevance(purpose, needs_auth_solution, github_actions)
+        
+        # RELEVANCE GATE: Block irrelevant emails
+        if not self._should_send_email(purpose, needs_auth_solution, relevance_score, actual_topic):
+            print(f"🚫 EMAIL BLOCKED: Not relevant for {actual_topic} (Auth needed: {needs_auth_solution})")
+            print(f"   📊 Relevance score: {relevance_score:.2f} (threshold: 0.5)")
+            
+            # Return filtered result instead of email
+            return EmailSolution(
+                original_query=original_query,
+                email_content=None,  # No email generated
+                github_actions=github_actions,
+                confidence_score=0.0,
+                solution_quality="filtered_irrelevant",
+                generated_timestamp=datetime.now().isoformat(),
+                purpose_reasoning=purpose.reasoning,
+                success_metrics={
+                    'filter_decision': f'Email blocked for {actual_topic}',
+                    'filter_reason': f'Authentication email not relevant for {purpose.reasoning.problem_type if purpose.reasoning else "unknown"} problem',
+                    'relevance_score': relevance_score,
+                    'needs_auth_solution': needs_auth_solution
+                }
+            )
+        
+        print(f"✅ EMAIL APPROVED: Relevant for {actual_topic} (Auth needed: {needs_auth_solution})")
+        print(f"   📊 Relevance score: {relevance_score:.2f}")
+        
         # Build comprehensive GitHub context
         github_context = self.build_enhanced_github_context(github_actions, purpose)
-        
-        # Original user query
-        original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
         
         # Generate enhanced email content
         email_content = self.generate_enhanced_email_content(original_query, github_context, purpose, github_actions)
@@ -611,7 +643,9 @@ class EnhancedRAGEmailEngine:
                 'repositories_found': len(github_actions),
                 'average_relevance': sum(action.relevance_score for action in github_actions) / len(github_actions) if github_actions else 0,
                 'technology_coverage': len(purpose.technologies),
-                'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0
+                'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0,
+                'email_approved': True,
+                'relevance_score': relevance_score
             }
         )
     
@@ -1039,6 +1073,95 @@ Return ONLY a JSON object in this exact format:
         except Exception as e:
             self.logger.error(f"Failed to save email solution: {e}")
             print(f"   ❌ Failed to save email solution: {e}")
+    
+    def _determine_auth_need_from_purpose(self, purpose: EnhancedRAGPurpose, query_text: str) -> bool:
+        """FIXED: Determine if authentication solution is actually needed"""
+        
+        # Check problem type
+        if purpose.reasoning and purpose.reasoning.problem_type == 'authentication_help':
+            return True
+        
+        # Check for explicit auth mentions in query
+        query_lower = query_text.lower()
+        auth_keywords = ['authentication', 'login', 'signin', 'jwt', 'oauth', 'auth', 'session']
+        auth_mentions = sum(1 for keyword in auth_keywords if keyword in query_lower)
+        
+        # Need at least 2 auth indicators for auth email
+        return auth_mentions >= 2
+    
+    def _extract_actual_topic_from_purpose(self, purpose: EnhancedRAGPurpose, query_text: str) -> str:
+        """Extract what the user is actually asking about"""
+        
+        query_lower = query_text.lower()
+        
+        # Check for specific topics
+        if 'webassembly' in query_lower or 'emscripten' in query_lower:
+            return 'WebAssembly integration'
+        elif 'astro' in query_lower and ('build' in query_lower or 'embed' in query_lower):
+            return 'Astro build integration'
+        elif 'd3' in query_lower or 'data visualization' in query_lower:
+            return 'Data visualization'
+        elif 'cloudflare' in query_lower:
+            return 'Cloudflare deployment'
+        elif any(auth_term in query_lower for auth_term in ['authentication', 'login', 'jwt', 'oauth']):
+            return 'Authentication implementation'
+        elif 'performance' in query_lower or 'optimization' in query_lower:
+            return 'Performance optimization'
+        elif 'design' in query_lower or 'ui' in query_lower:
+            return 'UI/UX design'
+        elif purpose.reasoning and purpose.reasoning.problem_type == 'implementation_showcase':
+            return 'Project showcase'
+        else:
+            # Use primary technology if available
+            if purpose.technologies and purpose.technologies[0] != 'auth-general':
+                return f"{purpose.technologies[0]} implementation"
+            else:
+                return "General development consultation"
+    
+    def _calculate_email_relevance(self, purpose: EnhancedRAGPurpose, needs_auth: bool, github_actions: List[GitHubDiscoveryAction]) -> float:
+        """Calculate relevance score for email generation"""
+        
+        score = 0.0
+        
+        # Base score from problem type alignment
+        if purpose.reasoning:
+            if purpose.reasoning.problem_type == 'authentication_help' and needs_auth:
+                score += 0.4  # High alignment
+            elif purpose.reasoning.problem_type in ['debugging_issue', 'general_consultation'] and needs_auth:
+                score += 0.3  # Medium alignment
+            elif not needs_auth:
+                score += 0.1  # Low alignment for non-auth problems
+        
+        # Score from GitHub research quality
+        if github_actions:
+            avg_relevance = sum(action.relevance_score for action in github_actions) / len(github_actions)
+            total_insights = sum(getattr(action, 'code_snippets_found', 0) for action in github_actions)
+            
+            score += avg_relevance * 0.3
+            score += min(0.2, total_insights * 0.05)  # Max 0.2 from insights
+        
+        # Score from confidence
+        score += purpose.confidence_score * 0.2
+        
+        return min(1.0, max(0.0, score))
+    
+    def _should_send_email(self, purpose: EnhancedRAGPurpose, needs_auth: bool, relevance_score: float, actual_topic: str) -> bool:
+        """Determine if email should be sent"""
+        
+        # Never send auth emails for non-auth problems
+        if not needs_auth and purpose.reasoning and purpose.reasoning.problem_type != 'authentication_help':
+            return False
+        
+        # Don't send consultation emails for showcases
+        if purpose.reasoning and purpose.reasoning.problem_type == 'implementation_showcase':
+            return False
+        
+        # Require minimum relevance
+        min_relevance_threshold = 0.5
+        if relevance_score < min_relevance_threshold:
+            return False
+        
+        return True
 
 
 # Backward compatibility - use enhanced engine
