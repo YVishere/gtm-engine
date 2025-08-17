@@ -19,6 +19,7 @@ from llm_search_strategist import LLMSearchStrategist, LLMSearchStrategy, Reposi
 from enhanced_action_transparency import LLMDrivenActionTracker, EnhancedTransparentCommunicator, SearchExecutionResult, RepositoryAnalysisResult
 from llm_outcome_assessor import LLMOutcomeAssessor, OutcomeAssessment
 from enhanced_analytics import RAGAnalyticsEngine
+from llm_decision_engine import LLMDecisionEngine
 
 
 class EnhancedRAGEmailEngine:
@@ -41,6 +42,9 @@ class EnhancedRAGEmailEngine:
         self.outcome_assessor = LLMOutcomeAssessor(self.llm_integration)
         self.analytics_engine = RAGAnalyticsEngine()
         self.communicator = EnhancedTransparentCommunicator()
+        
+        # Initialize LLM Decision Engine for quality improvements
+        self.llm_decision_engine = LLMDecisionEngine(self.llm_integration)
         
         # Test LLM integration on initialization
         if self.llm_integration.test_llm_integration():
@@ -583,15 +587,73 @@ class EnhancedRAGEmailEngine:
         return self._convert_search_to_github_actions(repos[:3], purpose)
     
     def generate_enhanced_email_solution(self, opportunity: ProcessedContent, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> EmailSolution:
-        """Generate enhanced email solution with improved context"""
+        """ENHANCED: Generate email solution with LLM-driven decisions for quality improvements"""
         
-        print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION")
+        print(f"\n📧 GENERATING ENHANCED EMAIL SOLUTION WITH LLM DECISIONS")
+        
+        original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
+        
+        # PHASE 1: LLM-driven technology detection
+        print(f"🤖 Phase 1: LLM Technology Detection")
+        llm_tech_analysis = self.llm_decision_engine.llm_technology_detection(original_query)
+        print(f"   📋 LLM Detected Technologies: {llm_tech_analysis.get('primary_technologies', [])}")
+        print(f"   🔍 LLM Reasoning: {llm_tech_analysis.get('reasoning', 'No reasoning provided')}")
+        
+        # PHASE 2: LLM-driven problem classification  
+        print(f"🤖 Phase 2: LLM Problem Classification")
+        llm_problem_analysis = self.llm_decision_engine.llm_problem_classification(original_query)
+        print(f"   📂 LLM Problem Type: {llm_problem_analysis.get('problem_type', 'general_consultation')}")
+        print(f"   🎯 LLM Confidence: {llm_problem_analysis.get('confidence', 0):.2f}")
+        
+        # PHASE 3: LLM-driven email relevance assessment
+        print(f"🤖 Phase 3: LLM Email Relevance Assessment")
+        llm_relevance_analysis = self.llm_decision_engine.llm_email_relevance_assessment(
+            original_query, 
+            llm_tech_analysis.get('primary_technologies', []),
+            llm_problem_analysis.get('problem_type', 'general_consultation')
+        )
+        print(f"   📊 LLM Relevance Score: {llm_relevance_analysis.get('relevance_score', 0):.2f}")
+        print(f"   💼 LLM Business Value: {llm_relevance_analysis.get('business_value', 'unknown')}")
+        
+        # DECISION GATE: Use LLM assessment for email blocking
+        if not llm_relevance_analysis.get('should_send_email', False):
+            print(f"🚫 LLM DECISION: Email blocked")
+            print(f"   🤖 LLM Reasoning: {llm_relevance_analysis.get('reasoning', 'No reasoning provided')}")
+            print(f"   🚨 Auth Signals: {llm_relevance_analysis.get('auth_signals', [])}")
+            print(f"   ❌ Non-Auth Signals: {llm_relevance_analysis.get('non_auth_signals', [])}")
+            
+            # Track LLM performance
+            self.llm_decision_engine.track_llm_performance('email_relevance', llm_relevance_analysis)
+            
+            return EmailSolution(
+                original_query=original_query,
+                email_content=None,
+                github_actions=github_actions,
+                confidence_score=0.0,
+                solution_quality="llm_filtered_irrelevant",
+                generated_timestamp=datetime.now().isoformat(),
+                purpose_reasoning=purpose.reasoning,
+                success_metrics={
+                    'llm_decision': 'blocked',
+                    'llm_reasoning': llm_relevance_analysis.get('reasoning'),
+                    'llm_relevance_score': llm_relevance_analysis.get('relevance_score'),
+                    'llm_tech_detected': llm_tech_analysis.get('primary_technologies'),
+                    'llm_problem_type': llm_problem_analysis.get('problem_type'),
+                    'llm_business_value': llm_relevance_analysis.get('business_value'),
+                    'llm_auth_signals': llm_relevance_analysis.get('auth_signals', []),
+                    'llm_non_auth_signals': llm_relevance_analysis.get('non_auth_signals', [])
+                }
+            )
+        
+        print(f"✅ LLM DECISION: Email approved")
+        print(f"   🤖 LLM Reasoning: {llm_relevance_analysis.get('reasoning', 'No reasoning provided')}")
+        print(f"   🎯 Auth Signals: {llm_relevance_analysis.get('auth_signals', [])}")
+        
+        # Track LLM performance
+        self.llm_decision_engine.track_llm_performance('email_relevance', llm_relevance_analysis)
         
         # Build comprehensive GitHub context
         github_context = self.build_enhanced_github_context(github_actions, purpose)
-        
-        # Original user query
-        original_query = f"{opportunity.original.title}\n{opportunity.original.content}"
         
         # Generate enhanced email content
         email_content = self.generate_enhanced_email_content(original_query, github_context, purpose, github_actions)
@@ -611,7 +673,12 @@ class EnhancedRAGEmailEngine:
                 'repositories_found': len(github_actions),
                 'average_relevance': sum(action.relevance_score for action in github_actions) / len(github_actions) if github_actions else 0,
                 'technology_coverage': len(purpose.technologies),
-                'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0
+                'complexity_addressed': purpose.reasoning.technical_complexity if purpose.reasoning else 0,
+                'llm_email_approved': True,
+                'llm_relevance_score': llm_relevance_analysis.get('relevance_score'),
+                'llm_tech_detected': llm_tech_analysis.get('primary_technologies'),
+                'llm_problem_type': llm_problem_analysis.get('problem_type'),
+                'llm_business_value': llm_relevance_analysis.get('business_value')
             }
         )
     
@@ -1039,6 +1106,95 @@ Return ONLY a JSON object in this exact format:
         except Exception as e:
             self.logger.error(f"Failed to save email solution: {e}")
             print(f"   ❌ Failed to save email solution: {e}")
+    
+    def _determine_auth_need_from_purpose(self, purpose: EnhancedRAGPurpose, query_text: str) -> bool:
+        """FIXED: Determine if authentication solution is actually needed"""
+        
+        # Check problem type
+        if purpose.reasoning and purpose.reasoning.problem_type == 'authentication_help':
+            return True
+        
+        # Check for explicit auth mentions in query
+        query_lower = query_text.lower()
+        auth_keywords = ['authentication', 'login', 'signin', 'jwt', 'oauth', 'auth', 'session']
+        auth_mentions = sum(1 for keyword in auth_keywords if keyword in query_lower)
+        
+        # Need at least 2 auth indicators for auth email
+        return auth_mentions >= 2
+    
+    def _extract_actual_topic_from_purpose(self, purpose: EnhancedRAGPurpose, query_text: str) -> str:
+        """Extract what the user is actually asking about"""
+        
+        query_lower = query_text.lower()
+        
+        # Check for specific topics
+        if 'webassembly' in query_lower or 'emscripten' in query_lower:
+            return 'WebAssembly integration'
+        elif 'astro' in query_lower and ('build' in query_lower or 'embed' in query_lower):
+            return 'Astro build integration'
+        elif 'd3' in query_lower or 'data visualization' in query_lower:
+            return 'Data visualization'
+        elif 'cloudflare' in query_lower:
+            return 'Cloudflare deployment'
+        elif any(auth_term in query_lower for auth_term in ['authentication', 'login', 'jwt', 'oauth']):
+            return 'Authentication implementation'
+        elif 'performance' in query_lower or 'optimization' in query_lower:
+            return 'Performance optimization'
+        elif 'design' in query_lower or 'ui' in query_lower:
+            return 'UI/UX design'
+        elif purpose.reasoning and purpose.reasoning.problem_type == 'implementation_showcase':
+            return 'Project showcase'
+        else:
+            # Use primary technology if available
+            if purpose.technologies and purpose.technologies[0] != 'auth-general':
+                return f"{purpose.technologies[0]} implementation"
+            else:
+                return "General development consultation"
+    
+    def _calculate_email_relevance(self, purpose: EnhancedRAGPurpose, needs_auth: bool, github_actions: List[GitHubDiscoveryAction]) -> float:
+        """Calculate relevance score for email generation"""
+        
+        score = 0.0
+        
+        # Base score from problem type alignment
+        if purpose.reasoning:
+            if purpose.reasoning.problem_type == 'authentication_help' and needs_auth:
+                score += 0.4  # High alignment
+            elif purpose.reasoning.problem_type in ['debugging_issue', 'general_consultation'] and needs_auth:
+                score += 0.3  # Medium alignment
+            elif not needs_auth:
+                score += 0.1  # Low alignment for non-auth problems
+        
+        # Score from GitHub research quality
+        if github_actions:
+            avg_relevance = sum(action.relevance_score for action in github_actions) / len(github_actions)
+            total_insights = sum(getattr(action, 'code_snippets_found', 0) for action in github_actions)
+            
+            score += avg_relevance * 0.3
+            score += min(0.2, total_insights * 0.05)  # Max 0.2 from insights
+        
+        # Score from confidence
+        score += purpose.confidence_score * 0.2
+        
+        return min(1.0, max(0.0, score))
+    
+    def _should_send_email(self, purpose: EnhancedRAGPurpose, needs_auth: bool, relevance_score: float, actual_topic: str) -> bool:
+        """Determine if email should be sent"""
+        
+        # Never send auth emails for non-auth problems
+        if not needs_auth and purpose.reasoning and purpose.reasoning.problem_type != 'authentication_help':
+            return False
+        
+        # Don't send consultation emails for showcases
+        if purpose.reasoning and purpose.reasoning.problem_type == 'implementation_showcase':
+            return False
+        
+        # Require minimum relevance
+        min_relevance_threshold = 0.5
+        if relevance_score < min_relevance_threshold:
+            return False
+        
+        return True
 
 
 # Backward compatibility - use enhanced engine

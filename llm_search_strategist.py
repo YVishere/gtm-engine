@@ -239,14 +239,23 @@ class LLMSearchStrategist:
         return remaining_opportunity >= estimated_requests and remaining_session >= estimated_requests
     
     def _create_search_strategy_prompt(self, context: SearchContext) -> str:
-        """Create comprehensive LLM prompt for search strategy"""
+        """FIXED: Create search strategy prompt without authentication bias"""
         
         llm_context = context.to_llm_context()
         
-        return f"""You are a GitHub search strategist with deep technical expertise. Your goal is to find the most relevant repositories for a developer's authentication challenge using minimal API requests.
+        # Determine if this is actually an auth-related query
+        problem_type = llm_context["opportunity_context"].get("problem_type", "general")
+        technologies = llm_context["opportunity_context"].get("technologies", [])
+        is_auth_related = problem_type == "authentication_help" or any(tech in ['jwt', 'oauth', 'auth-general'] for tech in technologies)
+        
+        problem_description = "authentication challenge" if is_auth_related else f"{problem_type} for {technologies[0] if technologies else 'development'}"
+        
+        return f"""You are a GitHub search strategist with deep technical expertise. Your goal is to find the most relevant repositories for a developer's {problem_description} using minimal API requests.
 
 OPPORTUNITY ANALYSIS:
 {self._format_opportunity_context(llm_context["opportunity_context"])}
+
+IMPORTANT: This is a {problem_type} problem. {"Focus on authentication solutions." if is_auth_related else "Do NOT search for authentication unless explicitly mentioned."}
 
 API CONSTRAINTS (CRITICAL):
 - Opportunity Budget: {llm_context["api_constraints"]["requests_remaining_opportunity"]} out of {llm_context["api_constraints"]["max_per_opportunity"]} remaining
@@ -261,21 +270,28 @@ LEARNING FROM PREVIOUS ATTEMPTS:
 {self._format_learning_context(llm_context["learning_context"])}
 
 YOUR TASK:
-Generate a strategic search plan that maximizes results while minimizing API usage.
+Generate a strategic search plan for {problem_type} that maximizes results while minimizing API usage.
+
+CRITICAL INSTRUCTIONS:
+- If problem_type is "implementation_showcase": Search for similar projects, NOT authentication
+- If problem_type is "debugging_issue": Search for debugging/troubleshooting resources
+- If problem_type is "authentication_help": Then and only then search for auth solutions
+- If problem_type is "performance_optimization": Search for performance examples
+- Match your search to the ACTUAL problem type, not authentication by default
 
 RESPOND WITH VALID JSON ONLY:
 {{
     "search_queries": [
         {{
-            "query": "specific search terms",
+            "query": "specific search terms matching {problem_type}",
             "type": "repositories",
-            "filters": {{"language": "javascript", "sort": "stars"}},
-            "reasoning": "why this specific query",
+            "filters": {{"language": "{technologies[0] if technologies else 'javascript'}", "sort": "stars"}},
+            "reasoning": "why this query matches the {problem_type} problem",
             "expected_repos": 8,
             "priority": "high|medium|low"
         }}
     ],
-    "reasoning": "Overall strategy explanation - why these specific queries will find the best solutions",
+    "reasoning": "Overall strategy for {problem_type} - why these queries will find relevant solutions",
     "expected_outcomes": {{
         "total_repositories": 25,
         "quality_threshold": "production-ready examples",
