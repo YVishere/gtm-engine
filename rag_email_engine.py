@@ -13,6 +13,7 @@ import time
 from models import ProcessedContent
 from config import Config
 from llm_processor import LLMProcessor
+from llm_integration import RAGLLMIntegration
 
 @dataclass
 class RAGSearchPurpose:
@@ -51,6 +52,13 @@ class RAGEmailEngine:
         }
         self.logger = logging.getLogger(self.__class__.__name__)
         self.llm_processor = LLMProcessor()
+        self.llm_integration = RAGLLMIntegration(self.llm_processor)
+        
+        # Test LLM integration on initialization
+        if self.llm_integration.test_llm_integration():
+            self.logger.info("LLM integration test passed")
+        else:
+            self.logger.warning("LLM integration test failed - will use fallback methods")
         
         # Ensure emails directory exists
         os.makedirs("emails", exist_ok=True)
@@ -87,21 +95,21 @@ Return ONLY valid JSON in this format:
 }}"""
 
         try:
-            # Use the LLM processor's ollama call method
-            if hasattr(self.llm_processor.processor, '_call_ollama'):
-                response = self.llm_processor.processor._call_ollama(purpose_prompt)
-            else:
-                # Fallback for different processor types
-                response = ""
-                
-            purpose_data = self.parse_purpose_response(response)
+            # Use the proper LLM integration
+            purpose_data = self.llm_integration.generate_purpose_with_llm(purpose_prompt)
             
-            return RAGSearchPurpose(
-                primary_purpose=purpose_data.get('primary_purpose', f'Authentication solution for {technologies[0] if technologies else "web application"}'),
-                technologies=purpose_data.get('technologies', technologies),
-                search_strategy=purpose_data.get('search_strategy', 'Find working examples and implementations'),
-                urgency_context=purpose_data.get('urgency_context', f"{opportunity.urgency_level.title()} priority technical assistance")
-            )
+            if purpose_data:
+                self.logger.info("Successfully generated purpose via LLM")
+                return RAGSearchPurpose(
+                    primary_purpose=purpose_data.get('primary_purpose', f'Authentication solution for {technologies[0] if technologies else "web application"}'),
+                    technologies=purpose_data.get('technologies', technologies),
+                    search_strategy=purpose_data.get('search_strategy', 'Find working examples and implementations'),
+                    urgency_context=purpose_data.get('urgency_context', f"{opportunity.urgency_level.title()} priority technical assistance")
+                )
+            else:
+                self.logger.warning("LLM returned empty purpose data, using fallback")
+                return self.fallback_search_purpose(opportunity, technologies)
+                
         except Exception as e:
             self.logger.warning(f"Failed to determine search purpose via LLM: {e}")
             return self.fallback_search_purpose(opportunity, technologies)
