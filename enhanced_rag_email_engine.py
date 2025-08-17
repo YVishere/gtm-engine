@@ -66,6 +66,10 @@ class EnhancedRAGEmailEngine:
         for i, opportunity in enumerate(opportunities):
             print(f"\n📧 Processing Opportunity {i+1}/{len(opportunities)}")
             
+            # Reset API budget for new opportunity
+            if i > 0:  # Don't reset for the first opportunity
+                self.action_tracker.start_new_opportunity(i)
+            
             try:
                 # Step 1: Enhanced Purpose Detection with LLM
                 purpose = self.determine_enhanced_purpose(opportunity, i)
@@ -228,9 +232,6 @@ class EnhancedRAGEmailEngine:
             
             all_repositories.extend(repos)
             
-            # Track API usage
-            self.action_tracker.track_api_usage(1)
-            
             print(f"      ✅ Found {len(repos)} repositories")
         
         execution_time = time.time() - start_time
@@ -322,8 +323,6 @@ class EnhancedRAGEmailEngine:
             # Generate insights
             insights = self._generate_insights(repo_data, files, patterns, strategy)
             insights_extracted.extend(insights)
-            
-            self.action_tracker.track_api_usage(1)
             
             print(f"      ✅ Files: {len(files)}, Patterns: {len(patterns)}, Insights: {len(insights)}")
         

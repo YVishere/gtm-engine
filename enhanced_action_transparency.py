@@ -232,10 +232,10 @@ class LLMDrivenActionTracker:
         self.repository_actions = []
         self.outcome_assessments = []
     
-    def start_new_opportunity(self) -> None:
+    def start_new_opportunity(self, opportunity_index: int) -> None:
         """Start tracking a new opportunity with fresh API budget"""
-        self.rate_limit_tracker.start_new_opportunity()
-        self.communicator.announce_new_opportunity(self.rate_limit_tracker.current_opportunity_index + 1)
+        self.rate_limit_tracker.start_new_opportunity(opportunity_index)
+        self.communicator.announce_new_opportunity(opportunity_index + 1)
         
     def record_llm_decision(self, 
                            decision_type: str,
