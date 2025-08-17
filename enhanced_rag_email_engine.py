@@ -836,28 +836,35 @@ GITHUB RESEARCH FINDINGS:
 SOLUTION REQUIREMENTS:
 {', '.join(purpose.reasoning.solution_requirements) if purpose.reasoning and purpose.reasoning.solution_requirements else 'Standard implementation guidance'}
 
-Your task: Write a professional, comprehensive email response that:
+Your task: Generate a professional email response in JSON format with two fields: "subject" and "text".
 
-1. **Acknowledges** the client's specific question and context
-2. **Provides** a clear, actionable solution based on the GitHub research
-3. **Includes** specific repository recommendations with implementation guidance
-4. **Addresses** the technical complexity appropriate to their skill level
-5. **Offers** next steps and additional resources
+The email should:
+1. **Acknowledge** the client's specific question and context
+2. **Provide** a clear, actionable solution based on the GitHub research
+3. **Include** specific repository recommendations with implementation guidance
+4. **Address** the technical complexity appropriate to their skill level
+5. **Offer** next steps and additional resources
 
-Email Structure:
+The "text" field should contain a comprehensive email body with:
 - Professional greeting
-- Problem acknowledgment
-- Solution overview
-- Specific repository recommendations (with brief descriptions)
-- Implementation guidance
-- Next steps
+- Problem acknowledgment and understanding
+- Detailed solution overview with specific implementation steps
+- Repository recommendations with explanations of why each is useful
+- Code examples or implementation guidance where appropriate
+- Clear next steps
 - Professional closing
 
-Write in a consultative, expert tone. Be specific about implementation details while remaining accessible."""
+Write in a consultative, expert tone. Be specific about implementation details while remaining accessible.
+
+Return ONLY a JSON object in this exact format:
+{{
+  "subject": "Your professional email subject line here",
+  "text": "Your complete email body content here with detailed technical guidance, repository recommendations, implementation steps, and professional formatting"
+}}"""
         
         try:
             email_content = self.llm_integration.generate_email_with_llm(enhanced_prompt)
-            
+
             if not email_content:
                 # Enhanced fallback
                 email_content = self.generate_enhanced_fallback_email(original_query, github_actions, purpose)
@@ -871,8 +878,11 @@ Write in a consultative, expert tone. Be specific about implementation details w
     def generate_enhanced_fallback_email(self, original_query: str, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> str:
         """Generate enhanced fallback email when LLM fails"""
         
+        import json
+        
+        # Build the email text content
         email_parts = []
-        email_parts.append("Hello,")
+        email_parts.append("Dear [Client],")
         email_parts.append("")
         email_parts.append("Thank you for your authentication implementation question. Based on our technical analysis and GitHub research, here's a comprehensive solution:")
         email_parts.append("")
@@ -919,6 +929,22 @@ Write in a consultative, expert tone. Be specific about implementation details w
         email_parts.append("Best regards,")
         email_parts.append("Technical Solutions Team")
         
+        # Create the complete email text
+        email_text = '\n'.join(email_parts)
+        
+        # Generate a subject line
+        primary_tech = purpose.technologies[0] if purpose.technologies else "Technical"
+        problem_type = purpose.reasoning.problem_type if purpose.reasoning else "Implementation"
+        subject = f"Expert Guidance on {primary_tech} Authentication {problem_type.replace('_', ' ').title()}"
+        
+        # Return as JSON string format like email8.json
+        fallback_email = {
+            "subject": subject,
+            "text": email_text
+        }
+        
+        return json.dumps(fallback_email)
+        
         return '\n'.join(email_parts)
     
     def calculate_enhanced_confidence(self, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose, opportunity: ProcessedContent) -> float:
@@ -964,13 +990,34 @@ Write in a consultative, expert tone. Be specific about implementation details w
     
     def save_email_solution(self, email_solution: EmailSolution, email_number: int) -> None:
         """Save enhanced email solution with comprehensive metadata"""
+        import html
+        import json as json_module
         
         filename = f"emails/email{email_number}.json"
         
+        # Fix HTML entities in original query
+        clean_original_query = html.unescape(email_solution.original_query)
+        
+        # Process email content - check if it's JSON string or plain text
+        clean_email_content = email_solution.email_content
+        if clean_email_content:
+            # Fix HTML entities
+            clean_email_content = html.unescape(clean_email_content)
+            
+            # Try to parse as JSON if it looks like a JSON string
+            if isinstance(clean_email_content, str) and clean_email_content.strip().startswith('{'):
+                try:
+                    # Attempt to parse the JSON string
+                    parsed_content = json_module.loads(clean_email_content)
+                    clean_email_content = parsed_content
+                except json_module.JSONDecodeError:
+                    # If parsing fails, keep as string but clean up escaping
+                    clean_email_content = clean_email_content.replace('\\\\n', '\n').replace('\\"', '"')
+        
         # Enhanced email data with all metadata
         email_data = {
-            "original_user_query": email_solution.original_query,
-            "email_solution": email_solution.email_content,
+            "original_user_query": clean_original_query,
+            "email_solution": clean_email_content,
             "metadata": {
                 "generated_timestamp": email_solution.generated_timestamp,
                 "confidence_score": email_solution.confidence_score,

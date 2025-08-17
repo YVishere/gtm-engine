@@ -131,9 +131,20 @@ class RAGLLMIntegration:
         if not response:
             self.logger.warning("LLM returned empty response for email generation")
             return ""
-            
-        # For email generation, we expect plain text response, not JSON
-        self.logger.info("Successfully generated email content via LLM")
+        
+        # Try to parse as JSON first since we're asking for JSON format
+        try:
+            parsed_result = self.analyzer.parse_llm_response(response)
+            if parsed_result and isinstance(parsed_result, dict):
+                # If we got a valid JSON response, return it as a JSON string
+                import json
+                self.logger.info("Successfully generated email content as JSON via LLM")
+                return json.dumps(parsed_result)
+        except Exception as e:
+            self.logger.warning(f"Failed to parse email response as JSON: {e}")
+        
+        # If JSON parsing fails, return the raw response
+        self.logger.info("Successfully generated email content as text via LLM")
         return response.strip()
     
     def test_llm_integration(self) -> bool:

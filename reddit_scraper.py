@@ -66,11 +66,17 @@ class RedditScraper(BaseScraper):
 
     def _parse_post(self, post: dict, subreddit: str) -> ScrapedContent:
         """Parse a Reddit post into ScrapedContent."""
+        import html
+        
         timestamp = datetime.fromtimestamp(post.get('created_utc', 0))
+        
+        # Clean HTML entities from title and content
+        title = html.unescape(post.get('title', ''))
+        content = html.unescape(post.get('selftext', ''))
 
         return ScrapedContent(
-            title=post.get('title', ''),
-            content=post.get('selftext', ''),
+            title=title,
+            content=content,
             url=f"{self.base_url}{post.get('permalink', '')}",
             source=SourceType.REDDIT,
             timestamp=timestamp,

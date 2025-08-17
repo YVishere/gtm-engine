@@ -87,11 +87,17 @@ class StackOverflowScraper(BaseScraper):
 
     def _parse_question(self, question: dict) -> ScrapedContent:
         """Parse a StackOverflow question into ScrapedContent."""
+        import html
+        
         timestamp = datetime.fromtimestamp(question.get('creation_date', 0))
+        
+        # Clean HTML entities from title and content
+        title = html.unescape(question.get('title', ''))
+        content = html.unescape(question.get('body', ''))
 
         return ScrapedContent(
-            title=question.get('title', ''),
-            content=question.get('body', ''),
+            title=title,
+            content=content,
             url=question.get('link', ''),
             source=SourceType.STACKOVERFLOW,
             timestamp=timestamp,
