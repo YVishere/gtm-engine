@@ -4,18 +4,20 @@ import json
 import logging
 import os
 import requests
+import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
 
 from models import ProcessedContent, EmailSolution, GitHubDiscoveryAction
 from config import Config
 from llm_processor import LLMProcessor
 from llm_integration import RAGLLMIntegration
 from enhanced_purpose_engine import TransparentRAGPurposeEngine, EnhancedRAGPurpose
-from action_transparency import RAGActionTracker, TransparentCommunicator
+from llm_search_strategist import LLMSearchStrategist, LLMSearchStrategy, RepositoryAnalysisStrategy
+from enhanced_action_transparency import LLMDrivenActionTracker, EnhancedTransparentCommunicator, SearchExecutionResult, RepositoryAnalysisResult
+from llm_outcome_assessor import LLMOutcomeAssessor, OutcomeAssessment
 from enhanced_analytics import RAGAnalyticsEngine
 
 
@@ -32,11 +34,13 @@ class EnhancedRAGEmailEngine:
         self.llm_processor = LLMProcessor()
         self.llm_integration = RAGLLMIntegration(self.llm_processor)
         
-        # Initialize enhanced components
+        # Initialize enhanced LLM-driven components
         self.purpose_engine = TransparentRAGPurposeEngine(self.llm_integration)
-        self.action_tracker = RAGActionTracker()
+        self.search_strategist = LLMSearchStrategist(self.llm_integration)
+        self.action_tracker = LLMDrivenActionTracker()
+        self.outcome_assessor = LLMOutcomeAssessor(self.llm_integration)
         self.analytics_engine = RAGAnalyticsEngine()
-        self.communicator = TransparentCommunicator()
+        self.communicator = EnhancedTransparentCommunicator()
         
         # Test LLM integration on initialization
         if self.llm_integration.test_llm_integration():
@@ -51,24 +55,24 @@ class EnhancedRAGEmailEngine:
         os.makedirs("reports", exist_ok=True)
     
     def generate_rag_email_solutions(self, opportunities: List[ProcessedContent]) -> None:
-        """Generate enhanced RAG email solutions with full transparency"""
+        """Generate enhanced RAG email solutions with maximum LLM decision-making"""
         
-        print(f"\n🚀 ENHANCED RAG EMAIL GENERATION STARTING...")
-        print(f"   📊 Processing {len(opportunities)} opportunities with full transparency")
+        print(f"\n🚀 LLM-DRIVEN RAG EMAIL GENERATION STARTING...")
+        print(f"   📊 Processing {len(opportunities)} opportunities with maximum LLM intelligence")
         
-        # Start analytics session
+        # Initialize session analytics
         session_data = self.analytics_engine.session_logger.session_data
         
         for i, opportunity in enumerate(opportunities):
             print(f"\n📧 Processing Opportunity {i+1}/{len(opportunities)}")
             
             try:
-                # Step 1: Enhanced Purpose Detection with Transparency
+                # Step 1: Enhanced Purpose Detection with LLM
                 purpose = self.determine_enhanced_purpose(opportunity, i)
                 self.analytics_engine.session_logger.log_opportunity_processing(i, purpose)
                 
-                # Step 2: Transparent Repository Discovery
-                github_actions = self.discover_with_enhanced_purpose(opportunity, purpose)
+                # Step 2: LLM-Driven Repository Discovery
+                github_actions = self.discover_with_llm_strategy(opportunity, purpose)
                 
                 # Step 3: Enhanced Email Generation
                 email_solution = self.generate_enhanced_email_solution(opportunity, github_actions, purpose)
@@ -85,8 +89,95 @@ class EnhancedRAGEmailEngine:
         self.analytics_engine.session_logger.finalize_session()
         comprehensive_report = self.analytics_engine.generate_comprehensive_report(session_data, self.action_tracker)
         
-        print(f"\n✅ ENHANCED RAG EMAIL GENERATION COMPLETE!")
-        print(f"   📊 Generated {len(opportunities)} email solutions with full analytics")
+        # Generate final session analytics from LLM-driven components
+        llm_analytics = self.action_tracker.generate_session_analytics()
+        
+        print(f"\n✅ LLM-DRIVEN RAG EMAIL GENERATION COMPLETE!")
+        print(f"   📊 Generated {len(opportunities)} email solutions")
+        print(f"   🧠 LLM Decisions Made: {llm_analytics['session_summary']['llm_decisions_made']}")
+        print(f"   🔧 API Requests Used: {llm_analytics['session_summary']['total_api_requests_used']}/{llm_analytics['session_summary']['max_requests_allowed']}")
+        print(f"   📈 Average LLM Confidence: {llm_analytics['session_summary']['average_confidence']:.2f}")
+    
+    def discover_with_llm_strategy(self, opportunity: ProcessedContent, purpose: EnhancedRAGPurpose) -> List[GitHubDiscoveryAction]:
+        """LLM-driven repository discovery with adaptive strategy"""
+        
+        print(f"\n🧠 LLM-DRIVEN REPOSITORY DISCOVERY")
+        
+        # Check initial API availability
+        self.action_tracker.communicator.announce_rate_limit_status(self.action_tracker.rate_limit_tracker)
+        
+        if not self.action_tracker.can_proceed_with_api_usage(3):
+            self.logger.warning("Insufficient API requests for discovery - using fallback")
+            return self._fallback_discovery(opportunity, purpose)
+        
+        # Step 1: Generate LLM search strategy
+        search_strategy = self.search_strategist.generate_search_strategy(
+            opportunity, purpose.reasoning
+        )
+        
+        # Record LLM decision
+        self.action_tracker.record_llm_decision(
+            'search_strategy',
+            {'opportunity': opportunity.original.title, 'purpose': purpose.primary_purpose},
+            {'search_queries': search_strategy.search_queries, 'reasoning': search_strategy.reasoning},
+            search_strategy.reasoning,
+            search_strategy.confidence_score,
+            search_strategy.estimated_api_usage
+        )
+        
+        # Step 2: Execute search strategy
+        search_result = self._execute_search_strategy(search_strategy)
+        
+        # Step 3: LLM assessment of search results
+        search_assessment = self.outcome_assessor.assess_search_outcome(
+            search_strategy, search_result, purpose.primary_purpose
+        )
+        
+        # Step 4: Generate repository analysis strategy
+        if search_result.repositories_found and self.action_tracker.can_proceed_with_api_usage(2):
+            repo_strategy = self.search_strategist.generate_repository_analysis_strategy(
+                search_result.repositories_found, purpose
+            )
+            
+            # Record repository analysis decision
+            self.action_tracker.record_llm_decision(
+                'repository_analysis',
+                {'repositories': [r.get('full_name', '') for r in search_result.repositories_found[:5]]},
+                {'target_repositories': repo_strategy.target_repositories, 'reasoning': repo_strategy.reasoning},
+                repo_strategy.reasoning,
+                0.8,  # Default confidence for repo analysis
+                repo_strategy.estimated_api_usage
+            )
+            
+            # Step 5: Execute repository analysis
+            analysis_result = self._execute_repository_analysis(repo_strategy, search_result.repositories_found)
+            
+            # Step 6: LLM assessment of repository analysis
+            repo_assessment = self.outcome_assessor.assess_repository_analysis_outcome(
+                repo_strategy, analysis_result, purpose.primary_purpose
+            )
+            
+            # Generate final GitHub actions from analysis
+            github_actions = self._convert_to_github_actions(analysis_result, search_result.repositories_found)
+            
+        else:
+            # Convert search results directly to GitHub actions
+            github_actions = self._convert_search_to_github_actions(search_result.repositories_found, purpose)
+        
+        # Step 7: Generate adaptive recommendations for future improvements
+        if self.action_tracker.can_proceed_with_api_usage(1):
+            remaining_calls = self.action_tracker.rate_limit_tracker.max_requests_per_session - self.action_tracker.rate_limit_tracker.requests_used
+            recommendations = self.outcome_assessor.generate_adaptive_recommendations(
+                search_result.repositories_found, remaining_calls, purpose.primary_purpose
+            )
+            
+            print(f"\n🎯 LLM ADAPTIVE RECOMMENDATIONS:")
+            if recommendations.get('should_continue'):
+                print(f"   ✅ Recommended: Continue with {len(recommendations.get('recommended_actions', []))} actions")
+            else:
+                print(f"   🛑 Recommended: Stop and proceed with current results")
+        
+        return github_actions
     
     def determine_enhanced_purpose(self, opportunity: ProcessedContent, opportunity_index: int) -> EnhancedRAGPurpose:
         """Enhanced purpose detection with transparency and reasoning"""
@@ -101,72 +192,396 @@ class EnhancedRAGEmailEngine:
         
         return enhanced_purpose
     
-    def discover_with_enhanced_purpose(self, opportunity: ProcessedContent, purpose: EnhancedRAGPurpose) -> List[GitHubDiscoveryAction]:
-        """Enhanced repository discovery with action tracking"""
+    def _execute_search_strategy(self, strategy: LLMSearchStrategy) -> SearchExecutionResult:
+        """Execute the LLM-generated search strategy"""
         
-        print(f"\n🔍 ENHANCED REPOSITORY DISCOVERY")
+        start_time = time.time()
+        all_repositories = []
+        queries_executed = []
+        api_requests_used = 0
         
-        # Track search actions transparently
-        search_queries = self.build_enhanced_purpose_queries(purpose)
-        discovered_repos = []
+        print(f"\n🔍 EXECUTING LLM SEARCH STRATEGY:")
+        print(f"   📋 Planned Queries: {len(strategy.search_queries)}")
+        print(f"   🎯 Expected Results: {strategy.expected_outcomes.get('total_repositories', 'unknown')}")
         
-        for query in search_queries:
-            # Track search action
-            search_action = self.action_tracker.track_search_action(
-                query, 'repositories', purpose,
-                language=purpose.technologies[0] if purpose.technologies else None,
-                sort='stars',
-                order='desc'
-            )
+        for query_info in strategy.search_queries:
+            if not self.action_tracker.can_proceed_with_api_usage(1):
+                print(f"   ⚠️  Stopping search execution - API limit reached")
+                break
             
-            # Execute search
-            repos = self.search_github_repositories(query, purpose.technologies[0] if purpose.technologies else None)
+            query = query_info.get('query', '')
+            filters = query_info.get('filters', {})
+            language = filters.get('language')
             
-            # Assess search outcome
-            outcome_assessment = self.action_tracker.assess_action_outcome(
-                f"search_{len(self.action_tracker.search_actions)}",
-                f"Find {purpose.success_criteria.get('minimum_repositories', 3)} relevant repositories",
-                f"Found {len(repos)} repositories",
-                {'found_repositories': len(repos), 'relevance_score': 0.7}
-            )
+            print(f"   🔍 Executing: '{query}' (Priority: {query_info.get('priority', 'medium')})")
             
-            discovered_repos.extend(repos)
+            # Execute the search
+            repos = self.search_github_repositories(query, language)
+            api_requests_used += 1
+            
+            queries_executed.append({
+                'query': query,
+                'filters': filters,
+                'results_count': len(repos),
+                'reasoning': query_info.get('reasoning', '')
+            })
+            
+            all_repositories.extend(repos)
+            
+            # Track API usage
+            self.action_tracker.track_api_usage(1)
+            
+            print(f"      ✅ Found {len(repos)} repositories")
         
-        # Analyze repositories with transparency
+        execution_time = time.time() - start_time
+        
+        # Remove duplicates while preserving order
+        unique_repos = []
+        seen_names = set()
+        for repo in all_repositories:
+            repo_name = repo.get('full_name', '')
+            if repo_name not in seen_names:
+                unique_repos.append(repo)
+                seen_names.add(repo_name)
+        
+        # Calculate success metrics
+        expected_repos = strategy.expected_outcomes.get('total_repositories', 10)
+        actual_repos = len(unique_repos)
+        success_score = min(actual_repos / max(expected_repos, 1), 1.0)
+        
+        success_metrics = {
+            'expected': expected_repos,
+            'actual': actual_repos,
+            'success_score': success_score,
+            'target_met': actual_repos >= expected_repos,
+            'repositories_found': actual_repos
+        }
+        
+        # Identify gaps
+        gaps_identified = []
+        if actual_repos < expected_repos:
+            gaps_identified.append(f"Found {actual_repos} repositories, expected {expected_repos}")
+        
+        if not any(repo.get('stargazers_count', 0) > 100 for repo in unique_repos):
+            gaps_identified.append("No high-quality repositories (>100 stars) found")
+        
+        result = SearchExecutionResult(
+            strategy=strategy,
+            queries_executed=queries_executed,
+            repositories_found=unique_repos,
+            api_requests_used=api_requests_used,
+            execution_time=execution_time,
+            success_metrics=success_metrics,
+            gaps_identified=gaps_identified
+        )
+        
+        # Record the execution result
+        self.action_tracker.record_search_execution(result)
+        
+        return result
+    
+    def _execute_repository_analysis(self, strategy: RepositoryAnalysisStrategy, available_repos: List[Dict]) -> RepositoryAnalysisResult:
+        """Execute the LLM-generated repository analysis strategy"""
+        
+        print(f"\n📂 EXECUTING LLM REPOSITORY ANALYSIS:")
+        print(f"   📦 Target Repositories: {len(strategy.target_repositories)}")
+        print(f"   🔍 Analysis Depth: {strategy.analysis_depth}")
+        
+        repositories_analyzed = []
+        files_examined = []
+        code_patterns_found = []
+        insights_extracted = []
+        api_requests_used = 0
+        
+        # Create mapping of repo names to repo data
+        repo_mapping = {repo.get('full_name', ''): repo for repo in available_repos}
+        
+        for repo_name in strategy.target_repositories:
+            if not self.action_tracker.can_proceed_with_api_usage(1):
+                print(f"   ⚠️  Stopping analysis - API limit reached")
+                break
+            
+            if repo_name not in repo_mapping:
+                print(f"   ❌ Repository {repo_name} not found in search results")
+                continue
+            
+            repo_data = repo_mapping[repo_name]
+            print(f"   📂 Analyzing: {repo_name}")
+            
+            # Analyze repository based on strategy
+            files, snippets = self.analyze_repository_enhanced(repo_data, strategy)
+            api_requests_used += 1
+            
+            repositories_analyzed.append(repo_name)
+            files_examined.extend(files)
+            
+            # Extract patterns based on strategy
+            patterns = self._extract_code_patterns(snippets, strategy.analysis_patterns)
+            code_patterns_found.extend(patterns)
+            
+            # Generate insights
+            insights = self._generate_insights(repo_data, files, patterns, strategy)
+            insights_extracted.extend(insights)
+            
+            self.action_tracker.track_api_usage(1)
+            
+            print(f"      ✅ Files: {len(files)}, Patterns: {len(patterns)}, Insights: {len(insights)}")
+        
+        # Calculate analysis quality
+        quality_score = self._calculate_analysis_quality(
+            repositories_analyzed, files_examined, code_patterns_found, insights_extracted, strategy
+        )
+        
+        result = RepositoryAnalysisResult(
+            strategy=strategy,
+            repositories_analyzed=repositories_analyzed,
+            files_examined=files_examined,
+            code_patterns_found=code_patterns_found,
+            api_requests_used=api_requests_used,
+            analysis_quality=quality_score,
+            insights_extracted=insights_extracted
+        )
+        
+        # Record the analysis result
+        self.action_tracker.record_repository_analysis(result)
+        
+        return result
+    
+    def analyze_repository_enhanced(self, repo: Dict, strategy_or_purpose) -> tuple[List[str], List[str]]:
+        """Enhanced repository analysis with pattern detection"""
+        
+        files_analyzed = []
+        code_snippets = []
+        
+        try:
+            # Get repository contents
+            contents_url = f"https://api.github.com/repos/{repo['full_name']}/contents"
+            response = requests.get(contents_url, headers=self.headers)
+            
+            if response.status_code == 200:
+                contents = response.json()
+                
+                # Determine priority patterns based on input type
+                if hasattr(strategy_or_purpose, 'expected_file_patterns'):
+                    # It's a strategy with LLM-generated patterns
+                    priority_patterns = strategy_or_purpose.expected_file_patterns
+                elif hasattr(strategy_or_purpose, 'priority_files'):
+                    # It's a strategy with priority files
+                    priority_patterns = strategy_or_purpose.priority_files
+                elif hasattr(strategy_or_purpose, 'expected_file_patterns'):
+                    # It's a purpose
+                    priority_patterns = strategy_or_purpose.expected_file_patterns
+                else:
+                    # Fallback
+                    priority_patterns = ['auth', 'login', 'token', 'jwt', 'oauth', 'security']
+                
+                print(f"      🔍 Looking for patterns: {', '.join(priority_patterns[:5])}")
+                
+                for item in contents:
+                    if item['type'] == 'file':
+                        filename = item['name'].lower()
+                        
+                        # Check if file matches priority patterns
+                        if any(pattern.lower() in filename for pattern in priority_patterns):
+                            files_analyzed.append(item['name'])
+                            
+                            # Get file content for analysis
+                            if len(code_snippets) < 3:  # Limit to 3 snippets
+                                snippet = self.get_file_snippet(repo['full_name'], item['path'])
+                                if snippet:
+                                    code_snippets.append(snippet)
+                        
+                        # Always check README files
+                        elif 'readme' in filename:
+                            files_analyzed.append(item['name'])
+                            if len(code_snippets) < 5:
+                                snippet = self.get_file_snippet(repo['full_name'], item['path'])
+                                if snippet:
+                                    code_snippets.append(snippet)
+        
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Repository analysis failed for {repo['full_name']}: {e}")
+        
+        return files_analyzed, code_snippets
+    
+    def get_file_snippet(self, repo_name: str, file_path: str) -> Optional[str]:
+        """Get a snippet of file content from repository"""
+        
+        try:
+            file_url = f"https://api.github.com/repos/{repo_name}/contents/{file_path}"
+            response = requests.get(file_url, headers=self.headers)
+            
+            if response.status_code == 200:
+                file_data = response.json()
+                
+                # Handle base64 encoded content
+                if file_data.get('encoding') == 'base64':
+                    import base64
+                    content = base64.b64decode(file_data['content']).decode('utf-8', errors='ignore')
+                    # Return first 500 characters
+                    return content[:500]
+                    
+            return None
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to get file snippet for {repo_name}/{file_path}: {e}")
+            return None
+    
+    def _extract_code_patterns(self, snippets: List[str], analysis_patterns: List[str]) -> List[str]:
+        """Extract code patterns from snippets based on analysis strategy"""
+        
+        patterns_found = []
+        
+        for snippet in snippets:
+            snippet_lower = snippet.lower()
+            
+            for pattern in analysis_patterns:
+                pattern_lower = pattern.lower()
+                
+                # Simple pattern matching - could be enhanced with LLM
+                if any(keyword in snippet_lower for keyword in pattern_lower.split()):
+                    patterns_found.append(f"Found {pattern} in code snippet")
+        
+        return patterns_found
+    
+    def _generate_insights(self, repo_data: Dict, files: List[str], patterns: List[str], strategy: RepositoryAnalysisStrategy) -> List[str]:
+        """Generate insights from repository analysis"""
+        
+        insights = []
+        
+        # Repository quality insights
+        stars = repo_data.get('stargazers_count', 0)
+        if stars > 1000:
+            insights.append(f"High-quality repository with {stars} stars indicates well-maintained code")
+        
+        # File analysis insights
+        if any('test' in f.lower() for f in files):
+            insights.append("Repository includes test files, suggesting good code quality")
+        
+        if any('docker' in f.lower() for f in files):
+            insights.append("Repository includes Docker configuration for easy deployment")
+        
+        # Pattern insights
+        if len(patterns) > 2:
+            insights.append(f"Rich implementation with {len(patterns)} authentication patterns found")
+        
+        return insights
+    
+    def _calculate_analysis_quality(self, repos: List[str], files: List[str], patterns: List[str], insights: List[str], strategy: RepositoryAnalysisStrategy) -> float:
+        """Calculate quality score for repository analysis"""
+        
+        quality = 0.0
+        
+        # Repository coverage
+        target_repos = len(strategy.target_repositories)
+        analyzed_repos = len(repos)
+        repo_coverage = analyzed_repos / max(target_repos, 1)
+        quality += repo_coverage * 0.3
+        
+        # File analysis coverage
+        if len(files) >= 3:
+            quality += 0.3
+        elif len(files) >= 1:
+            quality += 0.15
+        
+        # Pattern extraction success
+        if len(patterns) >= 2:
+            quality += 0.2
+        elif len(patterns) >= 1:
+            quality += 0.1
+        
+        # Insight generation
+        if len(insights) >= 2:
+            quality += 0.2
+        elif len(insights) >= 1:
+            quality += 0.1
+        
+        return min(quality, 1.0)
+    
+    def _convert_to_github_actions(self, analysis_result: RepositoryAnalysisResult, repo_data: List[Dict]) -> List[GitHubDiscoveryAction]:
+        """Convert repository analysis results to GitHub actions"""
+        
         github_actions = []
-        for repo in discovered_repos[:5]:  # Top 5 repositories
-            
-            # Track repository analysis action
-            repo_action = self.action_tracker.track_repository_action(
-                repo['full_name'], 'auth_patterns', purpose,
-                target_files=purpose.expected_file_patterns[:3]
-            )
-            
-            # Analyze repository
-            files_analyzed, code_snippets = self.analyze_repository_enhanced(repo, purpose)
+        repo_mapping = {repo.get('full_name', ''): repo for repo in repo_data}
+        
+        for repo_name in analysis_result.repositories_analyzed:
+            if repo_name in repo_mapping:
+                repo = repo_mapping[repo_name]
+                
+                # Calculate relevance score based on analysis results
+                relevance_score = self._calculate_relevance_from_analysis(repo_name, analysis_result)
+                
+                github_action = GitHubDiscoveryAction(
+                    repository_name=repo_name,
+                    purpose=f"LLM-driven analysis for authentication patterns",
+                    relevance_score=relevance_score,
+                    files_analyzed=[f for f in analysis_result.files_examined if repo_name in f or True],  # Simplified
+                    code_snippets_found=len([p for p in analysis_result.code_patterns_found if repo_name in p]),
+                    repository_stats={
+                        'stars': repo.get('stargazers_count', 0),
+                        'forks': repo.get('forks_count', 0),
+                        'language': repo.get('language', 'Unknown'),
+                        'updated': repo.get('updated_at', 'Unknown')
+                    },
+                    analysis_summary=f"LLM analysis found {len([i for i in analysis_result.insights_extracted if repo_name in i])} insights"
+                )
+                
+                github_actions.append(github_action)
+        
+        return github_actions
+    
+    def _convert_search_to_github_actions(self, repositories: List[Dict], purpose: EnhancedRAGPurpose) -> List[GitHubDiscoveryAction]:
+        """Convert search results directly to GitHub actions when analysis is skipped"""
+        
+        github_actions = []
+        
+        for repo in repositories[:5]:  # Top 5 repositories
             relevance_score = self.calculate_enhanced_relevance(repo, purpose)
             
             github_action = GitHubDiscoveryAction(
-                repository_name=repo['full_name'],
-                purpose=f"Analyze for {purpose.primary_purpose}",
+                repository_name=repo.get('full_name', 'unknown'),
+                purpose=f"Search result for {purpose.primary_purpose}",
                 relevance_score=relevance_score,
-                files_analyzed=files_analyzed,
-                code_snippets_found=len(code_snippets),
+                files_analyzed=[],
+                code_snippets_found=0,
                 repository_stats={
                     'stars': repo.get('stargazers_count', 0),
                     'forks': repo.get('forks_count', 0),
                     'language': repo.get('language', 'Unknown'),
                     'updated': repo.get('updated_at', 'Unknown')
                 },
-                analysis_summary=f"Found {len(code_snippets)} relevant code patterns"
+                analysis_summary="Search result - analysis skipped due to API limits"
             )
             
             github_actions.append(github_action)
         
-        # Announce discovery results
-        self.communicator.announce_discovery_results(github_actions, purpose)
-        
         return github_actions
+    
+    def _calculate_relevance_from_analysis(self, repo_name: str, analysis_result: RepositoryAnalysisResult) -> float:
+        """Calculate relevance score based on analysis results"""
+        
+        relevance = 0.5  # Base score
+        
+        # Boost for patterns found
+        patterns_for_repo = [p for p in analysis_result.code_patterns_found if repo_name in p]
+        relevance += min(len(patterns_for_repo) * 0.1, 0.3)
+        
+        # Boost for insights
+        insights_for_repo = [i for i in analysis_result.insights_extracted if repo_name in i]
+        relevance += min(len(insights_for_repo) * 0.1, 0.2)
+        
+        return min(relevance, 1.0)
+    
+    def _fallback_discovery(self, opportunity: ProcessedContent, purpose: EnhancedRAGPurpose) -> List[GitHubDiscoveryAction]:
+        """Fallback discovery when API limits are reached"""
+        
+        print(f"   ⚠️  Using fallback discovery due to API limits")
+        
+        # Simple search with primary technology
+        primary_tech = purpose.technologies[0] if purpose.technologies else 'javascript'
+        repos = self.search_github_repositories(f"{primary_tech} authentication", primary_tech)
+        
+        return self._convert_search_to_github_actions(repos[:3], purpose)
     
     def generate_enhanced_email_solution(self, opportunity: ProcessedContent, github_actions: List[GitHubDiscoveryAction], purpose: EnhancedRAGPurpose) -> EmailSolution:
         """Generate enhanced email solution with improved context"""

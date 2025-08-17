@@ -39,6 +39,21 @@ class Config:
     STACKOVERFLOW_API_KEY = os.getenv('STACK_OVERFLOW_API')
     GITHUB_API_KEY = os.getenv('GITHUB_API')
 
+    # GitHub API Rate Limiting Settings
+    GITHUB_MAX_REQUESTS_PER_SESSION = 15  # Conservative limit for search operations
+    GITHUB_MAX_REQUESTS_PER_HOUR = 100    # GitHub allows more, but we stay conservative
+    GITHUB_REQUEST_DELAY = 1              # Seconds between requests
+    
+    # LLM Decision Making Settings
+    LLM_MAX_RETRIES = 2
+    LLM_TIMEOUT_SECONDS = 30
+    LLM_CONFIDENCE_THRESHOLD = 0.7        # Minimum confidence for LLM decisions
+    
+    # RAG Search Strategy Settings
+    MAX_SEARCH_QUERIES_PER_OPPORTUNITY = 4
+    MAX_REPOSITORIES_TO_ANALYZE = 5
+    REPOSITORY_ANALYSIS_DEPTH_DEFAULT = "medium"  # shallow, medium, deep
+    
     # Scraping Settings
     TIME_WINDOW_MINUTES = 60 * 24 * 30 * 5  # 5 months for testing to get more data
     MAX_RESULTS_PER_SOURCE = 200
