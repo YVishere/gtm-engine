@@ -9,6 +9,7 @@ from reddit_scraper import RedditScraper
 from stackoverflow_scraper import StackOverflowScraper
 from llm_processor import LLMProcessor
 from models import ScrapingResult, SourceType
+from config import Config
 
 class AuthContentScraper:
     """Main orchestrator for scraping and processing auth-related content."""
@@ -103,7 +104,82 @@ class AuthContentScraper:
 
         print(f"\n🎉 Session {session_id} completed successfully!")
         print(f"📈 Performance: {len(all_scraped_content)} scraped → {len(processed_content)} analyzed")
+        print()
+        
         return result
+
+    def generate_rag_email_solutions(self, result: ScrapingResult):
+        """Generate RAG-enhanced email solutions for high-value opportunities"""
+        
+        print("\n🤖 RAG EMAIL GENERATION PHASE")
+        print("=" * 50)
+        
+        # Extract top opportunities (same ones shown in terminal)
+        top_opportunities = sorted(result.processed_content, key=lambda x: x.relevance_score, reverse=True)[:8]
+        
+        if not top_opportunities:
+            print("⚠️  No opportunities found for email generation.")
+            return
+        
+        # Check if GitHub API key is available
+        if not Config.GITHUB_API_KEY:
+            print("⚠️  GitHub API key not found. Please set GITHUB_API in .env file.")
+            return
+        
+        try:
+            # Initialize RAG system
+            from rag_email_engine import RAGEmailEngine
+            rag_engine = RAGEmailEngine(github_token=Config.GITHUB_API_KEY)
+            
+            print(f"🎯 Processing {len(top_opportunities)} high-value opportunities...")
+            
+            # Generate emails for each opportunity
+            email_solutions = []
+            for i, opportunity in enumerate(top_opportunities, 1):
+                try:
+                    print(f"\n🔍 Processing opportunity {i}/{len(top_opportunities)}")
+                    print(f"   📝 Topic: {opportunity.original.title[:60]}...")
+                    
+                    # RAG model determines search purpose
+                    search_purpose = rag_engine.determine_search_purpose(opportunity)
+                    print(f"   🎯 RAG Purpose: {search_purpose.primary_purpose}")
+                    
+                    # Discover repositories with purpose tracking
+                    github_actions = rag_engine.discover_with_purpose(opportunity, search_purpose)
+                    
+                    if github_actions:
+                        print(f"   📊 Found {len(github_actions)} relevant repositories")
+                        
+                        # Generate email solution
+                        email_solution = rag_engine.generate_email_solution(opportunity, github_actions, search_purpose)
+                        email_solutions.append(email_solution)
+                        
+                        print(f"   ✅ Email solution generated (confidence: {email_solution.confidence_score:.2f})")
+                    else:
+                        print(f"   ⚠️  No relevant repositories found")
+                        
+                except Exception as e:
+                    self.logger.warning(f"Failed to process opportunity {i}: {e}")
+                    continue
+            
+            if email_solutions:
+                # Save emails (overwrite existing)
+                rag_engine.save_email_solutions(email_solutions)
+                
+                print(f"\n📧 EMAIL GENERATION COMPLETE")
+                print("-" * 40)
+                print(f"✅ Generated {len(email_solutions)} email solutions")
+                print(f"📁 Saved in emails/ folder as email1.json, email2.json, email3.json")
+                print(f"📊 Average confidence score: {sum(s.confidence_score for s in email_solutions) / len(email_solutions):.2f}")
+                print(f"🔍 Total repositories analyzed: {sum(len(s.github_actions) for s in email_solutions)}")
+            else:
+                print("\n⚠️  No email solutions could be generated")
+                
+        except ImportError:
+            print("⚠️  RAG email engine not available. Please check rag_email_engine.py")
+        except Exception as e:
+            self.logger.error(f"RAG email generation failed: {e}")
+            print(f"❌ Email generation failed: {e}")
 
     def _create_empty_result(self, session_id: str, sources_scraped: List[SourceType]) -> ScrapingResult:
         """Create empty result when no content is found."""
@@ -249,6 +325,9 @@ def main():
     try:
         result = scraper.run_scraping_session()
         scraper.print_results(result)
+        
+        # Generate RAG-enhanced email solutions
+        scraper.generate_rag_email_solutions(result)
 
     except KeyboardInterrupt:
         print("\nScraping interrupted by user")
