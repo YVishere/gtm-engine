@@ -1,0 +1,908 @@
+> py ./main.py
+
+2025-08-18 02:49:56,445 - StackOverflowScraper - INFO - StackOverflow API key loaded - enhanced rate limits available
+🤖 Initializing vector processing models...
+2025-08-18 02:50:10,014 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cuda:0
+2025-08-18 02:50:10,014 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  2.06it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 139.06it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 195.83it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 154.82it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 163.22it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 152.30it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 165.81it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 180.74it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 159.03it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 189.86it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 179.74it/s]
+2025-08-18 02:50:13,912 - VectorizedLLMProcessor - INFO - Vectorized LLM processor initialized successfully
+2025-08-18 02:50:13,913 - LLMProcessor - INFO - Using vectorized LLM processor
+2025-08-18 02:50:13,913 - __main__ - INFO - Starting scraping session ad9b24ca
+🚀 Starting Authentication Content Intelligence Session
+============================================================
+Session ID: ad9b24ca
+Timestamp: 2025-08-18 02:50:13
+
+📡 Data Collection Phase
+------------------------------
+[1/2] Scraping reddit...
+2025-08-18 02:50:13,913 - RedditScraper - INFO - Scraping r/programming
+2025-08-18 02:50:16,433 - RedditScraper - INFO - Scraping r/webdev
+2025-08-18 02:50:19,919 - RedditScraper - INFO - Scraping r/javascript
+2025-08-18 02:50:22,389 - RedditScraper - INFO - Scraping r/python
+2025-08-18 02:50:25,516 - RedditScraper - INFO - Scraping r/security
+2025-08-18 02:50:25,842 - RedditScraper - ERROR - Request failed for https://www.reddit.com/r/security/new.json: 403 Client Error: Forbidden for url: https://www.reddit.com/r/security/new.json?limit=200
+2025-08-18 02:50:26,844 - RedditScraper - INFO - Scraping r/sysadmin
+2025-08-18 02:50:29,535 - RedditScraper - INFO - Scraping r/devops
+2025-08-18 02:50:32,394 - RedditScraper - INFO - Scraping r/node
+2025-08-18 02:50:35,185 - RedditScraper - INFO - Scraping r/reactjs
+   ✅ Found 139 items from reddit
+[2/2] Scraping stackoverflow...
+2025-08-18 02:50:38,183 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: authentication
+2025-08-18 02:50:39,661 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: oauth
+2025-08-18 02:50:41,067 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: jwt
+2025-08-18 02:50:42,477 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: session
+2025-08-18 02:50:45,362 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: security
+2025-08-18 02:50:46,792 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: login
+2025-08-18 02:50:48,135 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: authorization
+2025-08-18 02:50:49,539 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: saml
+2025-08-18 02:50:50,952 - StackOverflowScraper - INFO - Scraping StackOverflow for tag: openid
+   ✅ Found 571 items from stackoverflow
+
+📊 Collection Summary: 710 total items scraped
+
+🧠 AI Analysis Phase
+------------------------------
+
+🚀 Starting vectorized processing of 710 items...
+📊 Phase 1: Generating embeddings...
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 8/8 [00:01<00:00,  6.86it/s]
+   ✅ Generated 710 embeddings
+🔍 Phase 2: Clustering similar content...
+C:\Users\adity\AppData\Local\Programs\Python\Python313\Lib\site-packages\umap\umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 44.27it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 47.09it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 50.44it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 57.88it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 50.73it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 52.46it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 51.18it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 58.20it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 54.28it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 51.15it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 70.37it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 77.37it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 76.65it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 75.41it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 74.34it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 74.81it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 73.80it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 73.78it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 81.86it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 76.13it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 77.67it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 77.72it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 115.90it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 113.73it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 105.17it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 142.01it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 143.03it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 111.52it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 116.27it/s]
+Batches: 100%|███████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 98.74it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 125.55it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 112.38it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 116.41it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 119.24it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 110.68it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 105.99it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 112.18it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 120.50it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 137.06it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 132.22it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 125.57it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 133.96it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 133.93it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 122.45it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 125.69it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 123.32it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 123.45it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 136.58it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 136.09it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 120.90it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 134.80it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 129.94it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 131.07it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 115.50it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 143.64it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 125.59it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 134.43it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 144.76it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 147.14it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 142.41it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 140.74it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 137.69it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 145.85it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 144.82it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 157.36it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 153.87it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 143.99it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 141.87it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 147.29it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 135.74it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 142.73it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 148.99it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 137.78it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 152.39it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 157.95it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 169.49it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 153.59it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 153.38it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 169.45it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 156.13it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 150.88it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 162.38it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 181.59it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 147.34it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 157.58it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 145.82it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 163.81it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 160.57it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 146.16it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 157.82it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 148.44it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 155.81it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 169.19it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 203.34it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 202.75it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 210.63it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 200.77it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 195.13it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 197.31it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 185.28it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 198.93it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 187.88it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 191.01it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 173.06it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 183.81it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 194.32it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 199.02it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 211.08it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 213.21it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 221.15it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 197.98it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 217.87it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 193.22it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 232.84it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 182.28it/s]
+   ✅ Created 115 clusters (avg size: 5.2)
+🧠 Phase 3: Smart cluster processing...
+   📦 Processing cluster 1/100: Enterprise authentication and SSO integration (16 items)
+   📦 Processing cluster 2/100: Authentication security vulnerabilities and errors (15 items)
+   📦 Processing cluster 3/100: JWT payload malformation and validation issues (11 items)
+   📦 Processing cluster 4/100: Authentication implementation and setup questions (11 items)
+   📦 Processing cluster 5/100: Spring Boot security configuration problems (9 items)
+   📦 Processing cluster 6/100: JWT payload malformation and validation issues (9 items)
+   📦 Processing cluster 7/100: Spring Boot security configuration problems (13 items)
+   📦 Processing cluster 8/100: JWT payload malformation and validation issues (8 items)
+   📦 Processing cluster 9/100: Authentication implementation and setup questions (8 items)
+   📦 Processing cluster 10/100: Enterprise authentication and SSO integration (8 items)
+   📦 Processing cluster 11/100: JWT payload malformation and validation issues (8 items)
+   📦 Processing cluster 12/100: JWT payload malformation and validation issues (11 items)
+   📦 Processing cluster 13/100: JWT payload malformation and validation issues (11 items)
+   📦 Processing cluster 14/100: OAuth2 and OpenID Connect integration challenges (7 items)
+   📦 Processing cluster 15/100: OAuth2 and OpenID Connect integration challenges (7 items)
+   📦 Processing cluster 16/100: Authentication implementation and setup questions (7 items)
+   📦 Processing cluster 17/100: Authentication implementation and setup questions (7 items)
+   📦 Processing cluster 18/100: JWT payload malformation and validation issues (7 items)
+   📦 Processing cluster 19/100: Authentication implementation and setup questions (7 items)
+   📦 Processing cluster 20/100: Authentication implementation and setup questions (10 items)
+   📦 Processing cluster 21/100: Spring Boot security configuration problems (6 items)
+   📦 Processing cluster 22/100: Authentication implementation and setup questions (6 items)
+   📦 Processing cluster 23/100: JWT payload malformation and validation issues (6 items)
+   📦 Processing cluster 24/100: OAuth2 and OpenID Connect integration challenges (6 items)
+   📦 Processing cluster 25/100: Authentication implementation and setup questions (8 items)
+   📦 Processing cluster 26/100: Session management and stateless authentication (8 items)
+   📦 Processing cluster 27/100: Spring Boot security configuration problems (8 items)
+   📦 Processing cluster 28/100: JWT payload malformation and validation issues (8 items)
+   📦 Processing cluster 29/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 30/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 31/100: project app authentication challenges (5 items)
+   📦 Processing cluster 32/100: OAuth2 and OpenID Connect integration challenges (5 items)
+   📦 Processing cluster 33/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 34/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 35/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 36/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 37/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 38/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 39/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 40/100: Spring Boot security configuration problems (5 items)
+   📦 Processing cluster 41/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 42/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 43/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 44/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 45/100: Session management and stateless authentication (5 items)
+   📦 Processing cluster 46/100: Authentication implementation and setup questions (7 items)
+   📦 Processing cluster 47/100: JWT payload malformation and validation issues (7 items)
+   📦 Processing cluster 48/100: Spring Boot security configuration problems (7 items)
+   📦 Processing cluster 49/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 50/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 51/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 52/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 53/100: Spring Boot security configuration problems (4 items)
+   📦 Processing cluster 54/100: kelio ict protege authentication challenges (4 items)
+   📦 Processing cluster 55/100: OAuth2 and OpenID Connect integration challenges (4 items)
+   📦 Processing cluster 56/100: Authentication implementation and setup questions (6 items)
+   📦 Processing cluster 57/100: JWT payload malformation and validation issues (6 items)
+   📦 Processing cluster 58/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 59/100: OAuth2 and OpenID Connect integration challenges (4 items)
+   📦 Processing cluster 60/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 61/100: Enterprise authentication and SSO integration (4 items)
+   📦 Processing cluster 62/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 63/100: OAuth2 and OpenID Connect integration challenges (4 items)
+   📦 Processing cluster 64/100: Authentication implementation and setup questions (6 items)
+   📦 Processing cluster 65/100: JWT payload malformation and validation issues (4 items)
+   📦 Processing cluster 66/100: OAuth2 and OpenID Connect integration challenges (5 items)
+   📦 Processing cluster 67/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 68/100: OAuth2 and OpenID Connect integration challenges (5 items)
+   📦 Processing cluster 69/100: Authentication implementation and setup questions (5 items)
+   📦 Processing cluster 70/100: Enterprise authentication and SSO integration (5 items)
+   📦 Processing cluster 71/100: JWT payload malformation and validation issues (5 items)
+   📦 Processing cluster 72/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 73/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 74/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 75/100: Authentication security vulnerabilities and errors (3 items)
+   📦 Processing cluster 76/100: Spring Boot security configuration problems (3 items)
+   📦 Processing cluster 77/100: OAuth2 and OpenID Connect integration challenges (3 items)
+   📦 Processing cluster 78/100: OAuth2 and OpenID Connect integration challenges (3 items)
+   📦 Processing cluster 79/100: OAuth2 and OpenID Connect integration challenges (3 items)
+   📦 Processing cluster 80/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 81/100: paypal paypal auth authentication challenges (3 items)
+   📦 Processing cluster 82/100: Authentication implementation and setup questions (3 items)
+   📦 Processing cluster 83/100: Spring Boot security configuration problems (3 items)
+   📦 Processing cluster 84/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 85/100: Spring Boot security configuration problems (3 items)
+   📦 Processing cluster 86/100: Enterprise authentication and SSO integration (3 items)
+   📦 Processing cluster 87/100: ui just authentication challenges (3 items)
+   📦 Processing cluster 88/100: env considering authentication challenges (3 items)
+   📦 Processing cluster 89/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 90/100: indexing true multithreading authentication challenges (3 items)
+   📦 Processing cluster 91/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 92/100: Authentication implementation and setup questions (3 items)
+   📦 Processing cluster 93/100: button comments authentication challenges (3 items)
+   📦 Processing cluster 94/100: Spring Boot security configuration problems (3 items)
+   📦 Processing cluster 95/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 96/100: JWT payload malformation and validation issues (3 items)
+   📦 Processing cluster 97/100: Authentication implementation and setup questions (3 items)
+   📦 Processing cluster 98/100: Authentication implementation and setup questions (4 items)
+   📦 Processing cluster 99/100: Authentication implementation and setup questions (4 items)
+   📦 Processing cluster 100/100: Authentication implementation and setup questions (4 items)
+📈 Phase 4: Analyzing trends...
+   ✅ Identified 115 distinct conversation clusters
+   📊 Top themes: Enterprise authentication and SSO integration, Authentication security vulnerabilities and errors, JWT payload malformation and validation issues
+
+✅ Vectorized processing complete! 546 items in 14.9s
+🚀 Speed improvement: ~40.7x faster than sequential processing
+
+📈 Generating cluster-based executive summary using ALL clusters...
+   🔄 Extracting keywords from 115 clusters in parallel...
+   ⚡ Processing 115 clusters with 8 workers...
+   ✅ Extracted keywords from 115 clusters
+   🧠 Generating executive summary from 115 clusters...
+   ✅ LLM-enhanced executive summary generated
+🎯 Generating Descope-specific insights...
+   ✅ Analyzed 546 discussions for Descope opportunities
+
+🎉 Session ad9b24ca completed successfully!
+📈 Performance: 710 scraped → 546 analyzed
+
+
+================================================================================
+🎯 AUTHENTICATION INTELLIGENCE REPORT - Session ad9b24ca
+================================================================================
+📅 Timestamp: 2025-08-18 02:51:21
+📊 Data Pipeline: 710 items → 546 analyzed
+🔍 Sources: reddit, stackoverflow
+⚡ Processing Efficiency: 76.9% (smart filtering)
+
+📋 EXECUTIVE SUMMARY
+----------------------------------------
+Developers are facing authentication challenges with JWT payload malformation and validation issues, Spring Boot security configuration problems, OAuth2 and OpenID Connect integration challenges, and Enterprise authentication and SSO integration across 115 conversation clusters. Trending technologies causing issues include Google OIDC refresh token and access token having the same expiry, and the use of sensitive data without saving it server-side. Business opportunities for auth solution providers like Descope include addressing JWT payload malformation and validation issues, Spring Boot security configuration problems, and Enterprise authentication and SSO integration challenges. Market sentiment indicates purchase intent as developers are seeking solutions to these problems.
+
+📈 TRENDING TOPICS
+----------------------------------------
+ 1. JWT payload malformation and validation issues
+ 2. Spring Boot security configuration problems
+ 3. OAuth2 and OpenID Connect integration challenges
+ 4. Enterprise authentication and SSO integration
+ 5. Google OIDC refresh token and access token having the same expiry
+
+🎯 DESCOPE-SPECIFIC INSIGHTS
+----------------------------------------
+Authentication Pain Points Detected:
+ • Social login integration challenges: 20.9% of discussions
+ • JWT refresh token complexity: 14.7% of discussions
+ • Multi-tenant authentication: 6.0% of discussions
+
+Competitive Intelligence:
+ • Firebase Auth limitations: 34 opportunities
+ • AWS Cognito concerns: 33 opportunities
+ • Supabase migration signals: 18 opportunities
+ • Auth0 migration discussions: 12 opportunities
+ • Custom auth system issues: 8 opportunities
+ • Clerk.dev discussions: 7 opportunities
+
+Migration Opportunities:
+ • Firebase Auth Migration: 7 prospects
+ • Cognito Migration: 6 prospects
+ • Supabase Migration: 5 prospects
+ • Auth0 to Descope candidates: 2 prospects
+
+High-Value Opportunities: 16 urgent leads requiring immediate consultation
+Total Discussions Analyzed: 546
+
+🔥 HIGH-VALUE OPPORTUNITIES
+----------------------------------------
+💡 Generating GTM insights...
+ 1. 🚨 My First Experience as a Tech Lead: What Led Me There, What I Wou...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 Skenklok86
+    🏷️  Topics: auth-general
+    💡 My First Experience as a Tech Lead: What Led Me Th... Implementation Help challenge involving Enterprise authentication ...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/programming/comments/1mqvp08/my_first_experience_as_a_tech_lead_what_led_me/
+
+ 2. 🚨 What are the hot job hunting boards these days? Looking for remot...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 TheStrangeHand
+    🏷️  Topics: auth-general
+    💡 What are the hot job hunting boards these days? Lo... Implementation Help challenge involving Enterprise authentication ...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/sysadmin/comments/1mss6be/what_are_the_hot_job_hunting_boards_these_days/
+
+ 3. 🚨 IT Documentation What's new?...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 LuckyBug7914
+    🏷️  Topics: auth-general
+    💡 IT Documentation What's new?... Implementation Help challenge involving Enterprise authentication and SSO integration (r...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/sysadmin/comments/1mrq9mu/it_documentation_whats_new/
+
+ 4. 🚨 Is it not worth being in IT anymore? Everyone keeps telling me to...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 itzmesmarty
+    🏷️  Topics: auth-general
+    💡 Is it not worth being in IT anymore? Everyone keep... Implementation Help challenge involving Enterprise authentication ...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/sysadmin/comments/1mr7d3h/is_it_not_worth_being_in_it_anymore_everyone/
+
+ 5. 🚨 Am I Getting Fucked Friday, August 15th 2025...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 Necessary_Time
+    🏷️  Topics: auth-general
+    💡 Am I Getting Fucked Friday, August 15th 2025... Implementation Help challenge involving Enterprise authentication and SS...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/sysadmin/comments/1mr41bu/am_i_getting_fucked_friday_august_15th_2025/
+
+ 6. 🚨 Need help trying to locate a server power cable for PCIe devices....
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 Vermenthruaxx
+    🏷️  Topics: auth-general
+    💡 Need help trying to locate a server power cable fo... Implementation Help challenge involving Enterprise authentication ...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/sysadmin/comments/1mqx5d5/need_help_trying_to_locate_a_server_power_cable/
+
+ 7. 🚨 Retraining into DevOps/cloud with no prior experience—Is “DevOps ...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: reddit | 👤 Creative-Analysis734
+    🏷️  Topics: auth-general
+    💡 Retraining into DevOps/cloud with no prior experie... Implementation Help challenge involving Enterprise authentication ...
+    🎯 GTM Opportunity: Developer implementing auth general authentication presents urgent lead opportunity. Team should engage with technical consultation and Descope platform demo.
+    🔗 https://www.reddit.com/r/devops/comments/1mokol5/retraining_into_devopscloud_with_no_prior/
+
+ 8. 🚨 WebLogic 12c Foreign Server fails to authenticate with WildFly 26...
+    🎯 Relevance: [█████████░] 0.95
+    📍 Source: stackoverflow | 👤 vz1654056
+    🏷️  Topics: authentication-errors
+    💡 WebLogic 12c Foreign Server fails to authenticate ... Security Concerns challenge involving Authentication security vuln...
+    🎯 GTM Opportunity: Developer implementing authentication errors authentication presents qualified lead opportunity. Sales should offer technical consultation showcasing Descope's enterprise auth solutions.
+    🔗 https://stackoverflow.com/questions/79723280/weblogic-12c-foreign-server-fails-to-authenticate-with-wildfly-26-jms-jmssecuri
+
+
+🚀 ENHANCED RAG EMAIL GENERATION PHASE
+============================================================
+🤖 Initializing vector processing models...
+2025-08-18 02:51:21,571 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cuda:0
+2025-08-18 02:51:21,572 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 175.88it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 289.16it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 241.70it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 252.84it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 239.56it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 270.55it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 223.67it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 264.27it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 276.38it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 272.48it/s]
+Batches: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 269.19it/s]
+2025-08-18 02:51:24,493 - VectorizedLLMProcessor - INFO - Vectorized LLM processor initialized successfully
+2025-08-18 02:51:24,493 - LLMProcessor - INFO - Using vectorized LLM processor
+2025-08-18 02:51:24,493 - LLMProcessorAnalyzer - INFO - Analyzed VectorizedLLMProcessor - Recommended approach: vectorized_internal
+2025-08-18 02:51:24,493 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:51:27,454 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:51:27,454 - EnhancedRAGEmailEngine - INFO - Enhanced LLM integration test passed
+🎯 Processing 8 high-value opportunities with enhanced transparency...
+� Features: Deep purpose analysis | Action tracking | Comprehensive analytics
+
+🚀 LLM-DRIVEN RAG EMAIL GENERATION STARTING...
+   📊 Processing 8 opportunities with maximum LLM intelligence
+
+📧 Processing Opportunity 1/8
+
+🎯 ENHANCED PURPOSE DETECTION (Opportunity 1)
+   🧠 Deep Analysis Complete:
+      🔧 Technologies: angular, auth-general
+      📋 Problem Type: general_consultation
+      ⚡ Urgency: Urgency Level: HIGH (Indicators: low: learning)
+      🏢 Business: Business Context: unknown individual_development via reddit
+      🎯 Complexity: 3/10
+      📊 Confidence: 0.80
+2025-08-18 02:51:27,455 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:51:34,029 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+
+🎯 RAG PURPOSE DETECTED:
+   📝 Goal: Identify best practices for general authentication configuration in Angular applications
+   🔧 Technologies: angular, auth-general
+   📋 Strategy: Search for open-source Angular libraries or modules that provide robust and secure authentication mechanisms, with an emphasis on general authentication frameworks that can be easily integrated into existing projects.
+   ⚡ Context: Urgency Level: HIGH (Indicators: low: learning)
+   🎪 Confidence: 0.55
+   🧠 Problem Type: general_consultation
+   🎯 Complexity: 3/10
+   📊 Requirements:
+   🔮 Expected Results:
+      1. angular-auth-examples
+      2. angular-jwt-implementation
+
+🧠 LLM-DRIVEN REPOSITORY DISCOVERY
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 1:
+      🔢 Used: 0/7
+      ⚡ Remaining: 7 requests
+      📈 Usage: 0.0%
+   🔄 SESSION TOTAL:
+      🔢 Used: 0/50
+      ⚡ Remaining: 50 requests
+      📈 Usage: 0.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:51:34,030 - LLMSearchStrategist - INFO - Generating LLM-driven search strategy
+2025-08-18 02:51:34,030 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:51:54,543 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:51:54,544 - LLMSearchStrategist - INFO - Successfully generated search strategy via LLM
+
+🧠 LLM DECISION: SEARCH_STRATEGY
+   🎯 Reasoning: The strategy is designed to find high-quality, production-ready repositories that address the developer's specific problem of Angular-based authentication. By combining technology + problem type and applying quality filters, we aim to maximize results while minimizing API usage.
+   📊 Confidence: 0.80
+   🔧 API Budget: 2 requests
+   ⏰ Timestamp: 02:51:54
+   🔍 Search Queries Planned:
+      1. 'angular authentication jwt' (high priority)
+      2. 'angular auth general jwt' (medium priority)
+
+🔍 EXECUTING LLM SEARCH STRATEGY:
+   📋 Planned Queries: 2
+   🎯 Expected Results: 20
+   🔍 Executing: 'angular authentication jwt' (Priority: high)
+      ✅ Found 10 repositories
+   🔍 Executing: 'angular auth general jwt' (Priority: medium)
+      ✅ Found 10 repositories
+
+🔍 SEARCH EXECUTION COMPLETE:
+   📋 Queries Run: 2
+   📦 Repositories Found: 20
+   🔧 API Requests Used: 2
+   ⏱️  Execution Time: 1.24s
+   ✅ Target Met: Found 20 repositories
+   🌟 Top Repositories:
+      1. jaywcjlove/awesome-mac (⭐87197)
+      2. jondot/awesome-react-native (⭐35317)
+      3. auth0-blog/angular2-authentication-sample (⭐962)
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 1:
+      🔢 Used: 2/7
+      ⚡ Remaining: 5 requests
+      📈 Usage: 28.6%
+   🔄 SESSION TOTAL:
+      🔢 Used: 2/50
+      ⚡ Remaining: 48 requests
+      📈 Usage: 4.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:51:55,785 - LLMOutcomeAssessor - INFO - Generating LLM-driven search outcome assessment
+2025-08-18 02:51:55,785 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:52:24,154 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:52:24,154 - LLMOutcomeAssessor - INFO - Successfully generated search assessment via LLM
+2025-08-18 02:52:24,154 - LLMSearchStrategist - INFO - Generating LLM-driven repository analysis strategy
+2025-08-18 02:52:24,154 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:52:36,478 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:52:36,478 - LLMSearchStrategist - INFO - Successfully generated repository analysis strategy via LLM
+
+🧠 LLM DECISION: REPOSITORY_ANALYSIS
+   🎯 Reasoning: The selected repositories are top stars with relevant technologies (Angular and Node.js) and likely contain production-ready code. The medium analysis depth will allow us to examine key files without exceeding API limits.
+   📊 Confidence: 0.80
+   🔧 API Budget: 4 requests
+   ⏰ Timestamp: 02:52:36
+   📦 Target Repositories:
+      • auth0-blog/angular2-authentication-sample
+      • bezkoder/node-js-jwt-auth-mongodb
+
+📂 EXECUTING LLM REPOSITORY ANALYSIS:
+   📦 Target Repositories: 2
+   🔍 Analysis Depth: medium
+   📂 Analyzing: auth0-blog/angular2-authentication-sample
+      ✅ Files: 1, Patterns: 3, Insights: 1
+   📂 Analyzing: bezkoder/node-js-jwt-auth-mongodb
+      ✅ Files: 3, Patterns: 4, Insights: 1
+
+📂 REPOSITORY ANALYSIS COMPLETE:
+   📦 Repositories Analyzed: 2
+   📄 Files Examined: 4
+   🔧 API Requests Used: 2
+   📊 Analysis Quality: 1.00
+   🎯 Key Patterns Found:
+      • Found jwt implementation patterns in Angular applications in code snippet
+      • Found error handling approaches for authentication in code snippet
+      • Found security best practices for general authentication configuration in code snippet
+   💡 Insights Extracted:
+      • Rich implementation with 3 authentication patterns found
+      • Rich implementation with 4 authentication patterns found
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 1:
+      🔢 Used: 4/7
+      ⚡ Remaining: 3 requests
+      📈 Usage: 57.1%
+   🔄 SESSION TOTAL:
+      🔢 Used: 4/50
+      ⚡ Remaining: 46 requests
+      📈 Usage: 8.0%
+   ⚠️  WARNING: Low opportunity requests remaining!
+2025-08-18 02:52:38,601 - LLMOutcomeAssessor - INFO - Generating LLM-driven repository analysis assessment
+2025-08-18 02:52:38,601 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:52:54,910 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:52:54,910 - LLMOutcomeAssessor - INFO - Successfully generated repository assessment via LLM
+2025-08-18 02:52:54,911 - LLMOutcomeAssessor - INFO - Generating adaptive recommendations via LLM
+2025-08-18 02:52:54,911 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:53:11,084 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:53:11,084 - LLMOutcomeAssessor - INFO - Successfully generated adaptive recommendations via LLM
+
+🎯 LLM ADAPTIVE RECOMMENDATIONS:
+   ✅ Recommended: Continue with 2 actions
+
+📧 GENERATING ENHANCED EMAIL SOLUTION
+2025-08-18 02:53:11,085 - RAGLLMIntegration - INFO - Generating email via vectorized_internal approach
+2025-08-18 02:53:33,773 - RAGLLMIntegration - INFO - Successfully generated email content as JSON via LLM
+   ✅ Email solution saved: emails/email1.json
+2025-08-18 02:53:33,774 - EnhancedRAGEmailEngine - INFO - Enhanced email solution saved: emails/email1.json
+
+📧 Processing Opportunity 2/8
+
+🎯 STARTING NEW OPPORTUNITY #2
+   🔄 Fresh API budget: 7 requests available
+   🎪 Ready to explore and discover!
+
+🎯 ENHANCED PURPOSE DETECTION (Opportunity 2)
+   🧠 Deep Analysis Complete:
+      🔧 Technologies: angular, node, auth-general
+      📋 Problem Type: architectural_decision
+      ⚡ Urgency: Urgency Level: HIGH
+      🏢 Business: Business Context: unknown individual_development via reddit
+      🎯 Complexity: 3/10
+      📊 Confidence: 0.95
+2025-08-18 02:53:33,775 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:53:39,840 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+
+🎯 RAG PURPOSE DETECTED:
+   📝 Goal: Identify best practices for architecting secure authentication systems using angular, node, and auth-general technologies
+   🔧 Technologies: angular, node, auth-general
+   📋 Strategy: Strategy targeting solutions with requirements of secure authentication, access control, and authorization
+   ⚡ Context: Urgency Level: HIGH
+   🎪 Confidence: 0.62
+   🧠 Problem Type: architectural_decision
+   🎯 Complexity: 3/10
+   📊 Requirements:
+   🔮 Expected Results:
+      1. angular-auth-examples
+      2. angular-jwt-implementation
+      3. nodejs-auth-middleware
+
+🧠 LLM-DRIVEN REPOSITORY DISCOVERY
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 2:
+      🔢 Used: 0/7
+      ⚡ Remaining: 7 requests
+      📈 Usage: 0.0%
+   🔄 SESSION TOTAL:
+      🔢 Used: 4/50
+      ⚡ Remaining: 46 requests
+      📈 Usage: 8.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:53:39,842 - LLMSearchStrategist - INFO - Generating LLM-driven search strategy
+2025-08-18 02:53:39,842 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:54:02,164 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:54:02,164 - LLMSearchStrategist - INFO - Successfully generated search strategy via LLM
+
+🧠 LLM DECISION: SEARCH_STRATEGY
+   🎯 Reasoning: This strategic plan combines the developer's technologies (Angular and Node.js) with their authentication challenge. By using specific terms and including quality filters, we aim to find production-ready examples that cover end-to-end authentication flows.
+   📊 Confidence: 0.85
+   🔧 API Budget: 3 requests
+   ⏰ Timestamp: 02:54:02
+   🔍 Search Queries Planned:
+      1. 'angular authentication state management repository' (high priority)
+      2. 'nodejs jwt authentication example repository' (medium priority)
+      3. 'angular nodejs authentication flow repository' (low priority)
+
+🔍 EXECUTING LLM SEARCH STRATEGY:
+   📋 Planned Queries: 3
+   🎯 Expected Results: 21
+   🔍 Executing: 'angular authentication state management repository' (Priority: high)
+      ✅ Found 1 repositories
+   🔍 Executing: 'nodejs jwt authentication example repository' (Priority: medium)
+      ✅ Found 10 repositories
+   🔍 Executing: 'angular nodejs authentication flow repository' (Priority: low)
+      ✅ Found 0 repositories
+
+🔍 SEARCH EXECUTION COMPLETE:
+   📋 Queries Run: 3
+   📦 Repositories Found: 11
+   🔧 API Requests Used: 3
+   ⏱️  Execution Time: 1.48s
+   ⚠️  Target Missed: Expected 21, found 11
+   🌟 Top Repositories:
+      1. auth0-blog/nodejs-jwt-authentication-sample (⭐688)
+      2. VirgilSecurity/demo-twilio-backend-nodejs (⭐128)
+      3. indraarianggi/nodejs-sequelize-mysql-api (⭐74)
+   🔍 Gaps Identified:
+      • Found 11 repositories, expected 21
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 2:
+      🔢 Used: 3/7
+      ⚡ Remaining: 4 requests
+      📈 Usage: 42.9%
+   🔄 SESSION TOTAL:
+      🔢 Used: 7/50
+      ⚡ Remaining: 43 requests
+      📈 Usage: 14.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:54:03,642 - LLMOutcomeAssessor - INFO - Generating LLM-driven search outcome assessment
+2025-08-18 02:54:03,642 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:54:18,111 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:54:18,111 - LLMOutcomeAssessor - INFO - Successfully generated search assessment via LLM
+2025-08-18 02:54:18,111 - LLMSearchStrategist - INFO - Generating LLM-driven repository analysis strategy
+2025-08-18 02:54:18,111 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:54:31,583 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:54:31,583 - LLMSearchStrategist - INFO - Successfully generated repository analysis strategy via LLM
+
+🧠 LLM DECISION: REPOSITORY_ANALYSIS
+   🎯 Reasoning: We prioritize these two repositories because they have high star counts and are likely to contain production-ready code. 'cybersecurity-auth' is a curated collection of awesome AuthN+Z software, which suggests it may include best practices for authentication systems. 'nodejs-jwt-authentication-sample' has 688 stars and is a NodeJS API that supports username and password authentication, making it a relevant example for our goal.
+   📊 Confidence: 0.80
+   🔧 API Budget: 4 requests
+   ⏰ Timestamp: 02:54:31
+   📦 Target Repositories:
+      • paulveillard/cybersecurity-auth
+      • auth0-blog/nodejs-jwt-authentication-sample
+
+📂 EXECUTING LLM REPOSITORY ANALYSIS:
+   📦 Target Repositories: 2
+   🔍 Analysis Depth: medium
+   📂 Analyzing: paulveillard/cybersecurity-auth
+      ✅ Files: 1, Patterns: 1, Insights: 0
+   📂 Analyzing: auth0-blog/nodejs-jwt-authentication-sample
+      ✅ Files: 1, Patterns: 1, Insights: 0
+
+📂 REPOSITORY ANALYSIS COMPLETE:
+   📦 Repositories Analyzed: 2
+   📄 Files Examined: 2
+   🔧 API Requests Used: 2
+   📊 Analysis Quality: 0.65
+   🎯 Key Patterns Found:
+      • Found security best practices in code snippet
+      • Found jwt implementation patterns in code snippet
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 2:
+      🔢 Used: 5/7
+      ⚡ Remaining: 2 requests
+      📈 Usage: 71.4%
+   🔄 SESSION TOTAL:
+      🔢 Used: 9/50
+      ⚡ Remaining: 41 requests
+      📈 Usage: 18.0%
+   ⚠️  WARNING: Low opportunity requests remaining!
+2025-08-18 02:54:32,994 - LLMOutcomeAssessor - INFO - Generating LLM-driven repository analysis assessment
+2025-08-18 02:54:32,994 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:54:46,050 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:54:46,050 - LLMOutcomeAssessor - INFO - Successfully generated repository assessment via LLM
+2025-08-18 02:54:46,050 - LLMOutcomeAssessor - INFO - Generating adaptive recommendations via LLM
+2025-08-18 02:54:46,050 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:55:01,950 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:55:01,950 - LLMOutcomeAssessor - INFO - Successfully generated adaptive recommendations via LLM
+
+🎯 LLM ADAPTIVE RECOMMENDATIONS:
+   ✅ Recommended: Continue with 2 actions
+
+📧 GENERATING ENHANCED EMAIL SOLUTION
+2025-08-18 02:55:01,951 - RAGLLMIntegration - INFO - Generating email via vectorized_internal approach
+2025-08-18 02:55:32,933 - RAGLLMIntegration - INFO - Successfully generated email content as JSON via LLM
+   ✅ Email solution saved: emails/email2.json
+2025-08-18 02:55:32,935 - EnhancedRAGEmailEngine - INFO - Enhanced email solution saved: emails/email2.json
+
+📧 Processing Opportunity 3/8
+
+🎯 STARTING NEW OPPORTUNITY #3
+   🔄 Fresh API budget: 7 requests available
+   🎪 Ready to explore and discover!
+
+🎯 ENHANCED PURPOSE DETECTION (Opportunity 3)
+   🧠 Deep Analysis Complete:
+      🔧 Technologies: angular, node, auth-general
+      📋 Problem Type: architectural_decision
+      ⚡ Urgency: Urgency Level: HIGH
+      🏢 Business: Business Context: startup individual_development via reddit
+      🎯 Complexity: 3/10
+      📊 Confidence: 0.95
+2025-08-18 02:55:32,935 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:55:39,669 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+
+🎯 RAG PURPOSE DETECTED:
+   📝 Goal: Optimizing in-house documentation store for a startup with individual development via Reddit, focusing on authentication and architecture
+   🔧 Technologies: angular, node, auth-general
+   📋 Strategy: Searching for open-source solutions with robust authentication and customizable architecture, excluding Confluence and Read the Docs, targeting self-hosted or lightweight alternatives
+   ⚡ Context: Urgency Level: HIGH
+   🎪 Confidence: 0.62
+   🧠 Problem Type: architectural_decision
+   🎯 Complexity: 3/10
+   📊 Requirements:
+   🔮 Expected Results:
+      1. angular-auth-examples
+      2. angular-jwt-implementation
+      3. nodejs-auth-middleware
+
+🧠 LLM-DRIVEN REPOSITORY DISCOVERY
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 3:
+      🔢 Used: 0/7
+      ⚡ Remaining: 7 requests
+      📈 Usage: 0.0%
+   🔄 SESSION TOTAL:
+      🔢 Used: 9/50
+      ⚡ Remaining: 41 requests
+      📈 Usage: 18.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:55:39,672 - LLMSearchStrategist - INFO - Generating LLM-driven search strategy
+2025-08-18 02:55:39,672 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:56:01,841 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:56:01,841 - LLMSearchStrategist - INFO - Successfully generated search strategy via LLM
+
+🧠 LLM DECISION: SEARCH_STRATEGY
+   🎯 Reasoning: The strategy is designed to maximize results while minimizing API usage. We're combining technology with problem types and including quality filters to find production-ready code. The queries are prioritized based on expected value, with the first query focusing on node and angular authentication and the second query focusing on jwt and authentication architecture.
+   📊 Confidence: 0.90
+   🔧 API Budget: 2 requests
+   ⏰ Timestamp: 02:56:01
+   🔍 Search Queries Planned:
+      1. '(node OR angular) authentication' (high priority)
+      2. '(jwt OR authentication) architecture' (medium priority)
+
+🔍 EXECUTING LLM SEARCH STRATEGY:
+   📋 Planned Queries: 2
+   🎯 Expected Results: 20
+   🔍 Executing: '(node OR angular) authentication' (Priority: high)
+      ✅ Found 10 repositories
+   🔍 Executing: '(jwt OR authentication) architecture' (Priority: medium)
+      ✅ Found 10 repositories
+
+🔍 SEARCH EXECUTION COMPLETE:
+   📋 Queries Run: 2
+   📦 Repositories Found: 20
+   🔧 API Requests Used: 2
+   ⏱️  Execution Time: 1.39s
+   ✅ Target Met: Found 20 repositories
+   🌟 Top Repositories:
+      1. f/awesome-chatgpt-prompts (⭐132729)
+      2. ryanmcdermott/clean-code-javascript (⭐93357)
+      3. microsoft/Web-Dev-For-Beginners (⭐91413)
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 3:
+      🔢 Used: 2/7
+      ⚡ Remaining: 5 requests
+      📈 Usage: 28.6%
+   🔄 SESSION TOTAL:
+      🔢 Used: 11/50
+      ⚡ Remaining: 39 requests
+      📈 Usage: 22.0%
+   ✅ GOOD: Sufficient API requests available
+2025-08-18 02:56:03,230 - LLMOutcomeAssessor - INFO - Generating LLM-driven search outcome assessment
+2025-08-18 02:56:03,231 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:56:19,383 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:56:19,384 - LLMOutcomeAssessor - INFO - Successfully generated search assessment via LLM
+2025-08-18 02:56:19,384 - LLMSearchStrategist - INFO - Generating LLM-driven repository analysis strategy
+2025-08-18 02:56:19,384 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:56:31,143 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:56:31,143 - LLMSearchStrategist - INFO - Successfully generated repository analysis strategy via LLM
+
+🧠 LLM DECISION: REPOSITORY_ANALYSIS
+   🎯 Reasoning: Passport is a widely-used, mature authentication library for Node.js, while Laravel-Auth provides a complete solution for user authentication. Focusing on these two repositories will provide valuable insights into production-ready auth implementations.
+   📊 Confidence: 0.80
+   🔧 API Budget: 4 requests
+   ⏰ Timestamp: 02:56:31
+   📦 Target Repositories:
+      • jaredhanson/passport
+      • jeremykenedy/laravel-auth
+
+📂 EXECUTING LLM REPOSITORY ANALYSIS:
+   📦 Target Repositories: 2
+   🔍 Analysis Depth: medium
+   📂 Analyzing: jaredhanson/passport
+      ✅ Files: 1, Patterns: 0, Insights: 1
+   📂 Analyzing: jeremykenedy/laravel-auth
+      ✅ Files: 1, Patterns: 0, Insights: 1
+
+📂 REPOSITORY ANALYSIS COMPLETE:
+   📦 Repositories Analyzed: 2
+   📄 Files Examined: 2
+   🔧 API Requests Used: 2
+   📊 Analysis Quality: 0.65
+   💡 Insights Extracted:
+      • High-quality repository with 23384 stars indicates well-maintained code
+      • High-quality repository with 3042 stars indicates well-maintained code
+
+📊 API RATE LIMIT STATUS:
+   🎯 OPPORTUNITY 3:
+      🔢 Used: 4/7
+      ⚡ Remaining: 3 requests
+      📈 Usage: 57.1%
+   🔄 SESSION TOTAL:
+      🔢 Used: 13/50
+      ⚡ Remaining: 37 requests
+      📈 Usage: 26.0%
+   ⚠️  WARNING: Low opportunity requests remaining!
+2025-08-18 02:56:32,503 - LLMOutcomeAssessor - INFO - Generating LLM-driven repository analysis assessment
+2025-08-18 02:56:32,503 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:56:49,619 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:56:49,619 - LLMOutcomeAssessor - INFO - Successfully generated repository assessment via LLM
+2025-08-18 02:56:49,619 - LLMOutcomeAssessor - INFO - Generating adaptive recommendations via LLM
+2025-08-18 02:56:49,620 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+2025-08-18 02:57:11,589 - RAGLLMIntegration - INFO - Successfully generated purpose via LLM
+2025-08-18 02:57:11,589 - LLMOutcomeAssessor - INFO - Successfully generated adaptive recommendations via LLM
+
+🎯 LLM ADAPTIVE RECOMMENDATIONS:
+   ✅ Recommended: Continue with 3 actions
+
+📧 GENERATING ENHANCED EMAIL SOLUTION
+2025-08-18 02:57:11,589 - RAGLLMIntegration - INFO - Generating email via vectorized_internal approach
+2025-08-18 02:57:35,904 - RAGLLMIntegration - INFO - Successfully generated email content as JSON via LLM
+   ✅ Email solution saved: emails/email3.json
+2025-08-18 02:57:35,905 - EnhancedRAGEmailEngine - INFO - Enhanced email solution saved: emails/email3.json
+
+📧 Processing Opportunity 4/8
+
+🎯 STARTING NEW OPPORTUNITY #4
+   🔄 Fresh API budget: 7 requests available
+   🎪 Ready to explore and discover!
+
+🎯 ENHANCED PURPOSE DETECTION (Opportunity 4)
+   🧠 Deep Analysis Complete:
+      🔧 Technologies: angular, java, auth-general
+      📋 Problem Type: architectural_decision
+      ⚡ Urgency: Urgency Level: HIGH (Indicators: medium: project, low: considering)
+      🏢 Business: Business Context: unknown individual_development via reddit
+      🎯 Complexity: 3/10
+      📊 Confidence: 0.95
+2025-08-18 02:57:35,907 - RAGLLMIntegration - INFO - Calling LLM via vectorized_internal approach
+
+Scraping interrupted by user
