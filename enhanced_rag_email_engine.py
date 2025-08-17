@@ -166,7 +166,7 @@ class EnhancedRAGEmailEngine:
         
         # Step 7: Generate adaptive recommendations for future improvements
         if self.action_tracker.can_proceed_with_api_usage(1):
-            remaining_calls = self.action_tracker.rate_limit_tracker.max_requests_per_session - self.action_tracker.rate_limit_tracker.requests_used
+            remaining_calls = self.action_tracker.rate_limit_tracker.get_remaining_for_session()
             recommendations = self.outcome_assessor.generate_adaptive_recommendations(
                 search_result.repositories_found, remaining_calls, purpose.primary_purpose
             )

@@ -40,9 +40,10 @@ class Config:
     GITHUB_API_KEY = os.getenv('GITHUB_API')
 
     # GitHub API Rate Limiting Settings
-    GITHUB_MAX_REQUESTS_PER_SESSION = 15  # Conservative limit for search operations
-    GITHUB_MAX_REQUESTS_PER_HOUR = 100    # GitHub allows more, but we stay conservative
-    GITHUB_REQUEST_DELAY = 1              # Seconds between requests
+    GITHUB_MAX_REQUESTS_PER_OPPORTUNITY = 7  # API budget per opportunity
+    GITHUB_MAX_REQUESTS_PER_SESSION = 50     # Total session limit (7 * ~7 opportunities)
+    GITHUB_MAX_REQUESTS_PER_HOUR = 100       # GitHub allows more, but we stay conservative
+    GITHUB_REQUEST_DELAY = 1                 # Seconds between requests
     
     # LLM Decision Making Settings
     LLM_MAX_RETRIES = 2

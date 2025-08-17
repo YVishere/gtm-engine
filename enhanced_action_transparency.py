@@ -55,6 +55,12 @@ class EnhancedTransparentCommunicator:
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
     
+    def announce_new_opportunity(self, opportunity_number: int) -> None:
+        """Announce the start of a new opportunity with fresh API budget"""
+        print(f"\n🎯 STARTING NEW OPPORTUNITY #{opportunity_number}")
+        print(f"   🔄 Fresh API budget: 7 requests available")
+        print(f"   🎪 Ready to explore and discover!")
+    
     def announce_purpose_decision(self, purpose) -> None:
         """Announce the purpose detection decision with reasoning"""
         
@@ -91,18 +97,28 @@ class EnhancedTransparentCommunicator:
     def announce_rate_limit_status(self, rate_limit: APIRateLimit) -> None:
         """Announce current API rate limit status"""
         
-        remaining = rate_limit.max_requests_per_session - rate_limit.requests_used
-        percentage_used = (rate_limit.requests_used / rate_limit.max_requests_per_session) * 100
+        remaining_opportunity = rate_limit.get_remaining_for_opportunity()
+        remaining_session = rate_limit.get_remaining_for_session()
+        opportunity_percentage = (rate_limit.requests_used_current_opportunity / rate_limit.max_requests_per_opportunity) * 100
+        session_percentage = (rate_limit.requests_used_session / rate_limit.max_requests_per_session) * 100
         
         print(f"\n📊 API RATE LIMIT STATUS:")
-        print(f"   🔢 Requests Used: {rate_limit.requests_used}/{rate_limit.max_requests_per_session}")
-        print(f"   ⚡ Remaining: {remaining} requests")
-        print(f"   📈 Usage: {percentage_used:.1f}%")
+        print(f"   🎯 OPPORTUNITY {rate_limit.current_opportunity_index + 1}:")
+        print(f"      🔢 Used: {rate_limit.requests_used_current_opportunity}/{rate_limit.max_requests_per_opportunity}")
+        print(f"      ⚡ Remaining: {remaining_opportunity} requests")
+        print(f"      📈 Usage: {opportunity_percentage:.1f}%")
         
-        if remaining <= 3:
-            print(f"   ⚠️  WARNING: Low API requests remaining!")
-        elif remaining <= 7:
-            print(f"   🟡 CAUTION: API requests running low")
+        print(f"   🔄 SESSION TOTAL:")
+        print(f"      🔢 Used: {rate_limit.requests_used_session}/{rate_limit.max_requests_per_session}")
+        print(f"      ⚡ Remaining: {remaining_session} requests")
+        print(f"      📈 Usage: {session_percentage:.1f}%")
+        
+        if remaining_opportunity <= 1:
+            print(f"   🚨 CRITICAL: Opportunity budget nearly exhausted!")
+        elif remaining_opportunity <= 3:
+            print(f"   ⚠️  WARNING: Low opportunity requests remaining!")
+        elif remaining_session <= 10:
+            print(f"   🟡 CAUTION: Session requests running low")
         else:
             print(f"   ✅ GOOD: Sufficient API requests available")
     
@@ -215,6 +231,11 @@ class LLMDrivenActionTracker:
         self.search_actions = []  # For compatibility with existing code
         self.repository_actions = []
         self.outcome_assessments = []
+    
+    def start_new_opportunity(self) -> None:
+        """Start tracking a new opportunity with fresh API budget"""
+        self.rate_limit_tracker.start_new_opportunity()
+        self.communicator.announce_new_opportunity(self.rate_limit_tracker.current_opportunity_index + 1)
         
     def record_llm_decision(self, 
                            decision_type: str,
@@ -244,7 +265,8 @@ class LLMDrivenActionTracker:
         """Record search execution results"""
         
         self.search_executions.append(result)
-        self.rate_limit_tracker.requests_used += result.api_requests_used
+        self.rate_limit_tracker.requests_used_current_opportunity += result.api_requests_used
+        self.rate_limit_tracker.requests_used_session += result.api_requests_used
         
         # Update the corresponding LLM decision with actual results
         self._update_decision_with_results('search_strategy', result.api_requests_used, 
@@ -257,7 +279,8 @@ class LLMDrivenActionTracker:
         """Record repository analysis results"""
         
         self.repository_analyses.append(result)
-        self.rate_limit_tracker.requests_used += result.api_requests_used
+        self.rate_limit_tracker.requests_used_current_opportunity += result.api_requests_used
+        self.rate_limit_tracker.requests_used_session += result.api_requests_used
         
         # Update the corresponding LLM decision with actual results
         self._update_decision_with_results('repository_analysis', result.api_requests_used, 
@@ -269,27 +292,41 @@ class LLMDrivenActionTracker:
     def can_proceed_with_api_usage(self, estimated_requests: int) -> bool:
         """Check if we can proceed with estimated API usage"""
         
-        remaining = self.rate_limit_tracker.max_requests_per_session - self.rate_limit_tracker.requests_used
+        remaining_opportunity = self.rate_limit_tracker.get_remaining_for_opportunity()
+        remaining_session = self.rate_limit_tracker.get_remaining_for_session()
         
-        if remaining < estimated_requests:
-            self.logger.warning(f"Insufficient API requests: need {estimated_requests}, have {remaining}")
+        if remaining_opportunity < estimated_requests:
+            self.logger.warning(f"Insufficient opportunity API requests: need {estimated_requests}, have {remaining_opportunity}")
+            return False
+        elif remaining_session < estimated_requests:
+            self.logger.warning(f"Insufficient session API requests: need {estimated_requests}, have {remaining_session}")
             return False
         
         return True
     
     def track_api_usage(self, requests_used: int) -> bool:
-        """Track API usage and check if we can continue"""
+        """Track API usage for the current opportunity and check if we can continue"""
         
-        self.rate_limit_tracker.requests_used += requests_used
+        self.rate_limit_tracker.requests_used_current_opportunity += requests_used
+        self.rate_limit_tracker.requests_used_session += requests_used
         self.rate_limit_tracker.last_request_time = datetime.now()
         
-        remaining = self.rate_limit_tracker.max_requests_per_session - self.rate_limit_tracker.requests_used
+        remaining_opportunity = self.rate_limit_tracker.get_remaining_for_opportunity()
+        remaining_session = self.rate_limit_tracker.get_remaining_for_session()
         
-        if remaining <= 0:
+        print(f"\n📈 TRACKING API USAGE:")
+        print(f"   🎯 Opportunity {self.rate_limit_tracker.current_opportunity_index + 1}: +{requests_used} requests")
+        print(f"   📊 Opportunity Total: {self.rate_limit_tracker.requests_used_current_opportunity}/{self.rate_limit_tracker.max_requests_per_opportunity}")
+        print(f"   🔄 Session Total: {self.rate_limit_tracker.requests_used_session}/{self.rate_limit_tracker.max_requests_per_session}")
+        
+        if remaining_opportunity <= 0:
+            self.logger.warning("API rate limit reached for this opportunity")
+            return False
+        elif remaining_session <= 0:
             self.logger.warning("API rate limit reached for this session")
             return False
-        elif remaining <= 3:
-            self.logger.warning(f"API rate limit nearly reached: {remaining} requests remaining")
+        elif remaining_opportunity <= 1:
+            self.logger.warning(f"Opportunity API rate limit nearly reached: {remaining_opportunity} requests remaining")
         
         return True
     
@@ -301,16 +338,16 @@ class LLMDrivenActionTracker:
         total_analyses = len(self.repository_analyses)
         
         return {
-            "total_api_requests_used": self.rate_limit_tracker.requests_used,
+            "total_api_requests_used": self.rate_limit_tracker.requests_used_session,
             "max_requests_allowed": self.rate_limit_tracker.max_requests_per_session,
-            "remaining_requests": self.rate_limit_tracker.max_requests_per_session - self.rate_limit_tracker.requests_used,
-            "usage_percentage": (self.rate_limit_tracker.requests_used / self.rate_limit_tracker.max_requests_per_session) * 100,
+            "remaining_requests": self.rate_limit_tracker.get_remaining_for_session(),
+            "usage_percentage": (self.rate_limit_tracker.requests_used_session / self.rate_limit_tracker.max_requests_per_session) * 100,
             "llm_decisions_made": total_decisions,
             "search_executions": total_searches,
             "repository_analyses": total_analyses,
             "average_confidence": sum(d.confidence_score for d in self.llm_decisions) / max(total_decisions, 1),
             "session_duration": (datetime.now() - self.rate_limit_tracker.session_start).total_seconds() / 60,
-            "requests_per_minute": self.rate_limit_tracker.requests_used / max((datetime.now() - self.rate_limit_tracker.session_start).total_seconds() / 60, 1)
+            "requests_per_minute": self.rate_limit_tracker.requests_used_session / max((datetime.now() - self.rate_limit_tracker.session_start).total_seconds() / 60, 1)
         }
     
     def generate_session_analytics(self) -> Dict[str, Any]:
@@ -405,7 +442,7 @@ class LLMDrivenActionTracker:
         recommendations = []
         
         # API usage recommendations
-        usage_pct = (self.rate_limit_tracker.requests_used / self.rate_limit_tracker.max_requests_per_session) * 100
+        usage_pct = (self.rate_limit_tracker.requests_used_session / self.rate_limit_tracker.max_requests_per_session) * 100
         if usage_pct > 80:
             recommendations.append("Consider increasing API request limits for future sessions")
         elif usage_pct < 30:

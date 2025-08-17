@@ -15,15 +15,31 @@ from config import Config
 @dataclass
 class APIRateLimit:
     """GitHub API rate limiting configuration"""
+    max_requests_per_opportunity: int = Config.GITHUB_MAX_REQUESTS_PER_OPPORTUNITY
     max_requests_per_session: int = Config.GITHUB_MAX_REQUESTS_PER_SESSION
     max_requests_per_hour: int = Config.GITHUB_MAX_REQUESTS_PER_HOUR
-    requests_used: int = 0
+    requests_used_session: int = 0
+    requests_used_current_opportunity: int = 0
+    current_opportunity_index: int = 0
     session_start: datetime = None
     last_request_time: datetime = None
     
     def __post_init__(self):
         if self.session_start is None:
             self.session_start = datetime.now()
+    
+    def start_new_opportunity(self, opportunity_index: int) -> None:
+        """Start tracking a new opportunity"""
+        self.current_opportunity_index = opportunity_index
+        self.requests_used_current_opportunity = 0
+    
+    def get_remaining_for_opportunity(self) -> int:
+        """Get remaining requests for current opportunity"""
+        return self.max_requests_per_opportunity - self.requests_used_current_opportunity
+    
+    def get_remaining_for_session(self) -> int:
+        """Get remaining requests for entire session"""
+        return self.max_requests_per_session - self.requests_used_session
 
 
 @dataclass
@@ -50,10 +66,13 @@ class SearchContext:
                 "solution_requirements": self.analysis.solution_requirements
             },
             "api_constraints": {
-                "requests_remaining": self.rate_limit.max_requests_per_session - self.rate_limit.requests_used,
-                "max_total_requests": self.rate_limit.max_requests_per_session,
-                "requests_used": self.rate_limit.requests_used,
-                "warning": "Be strategic - GitHub API requests are limited!"
+                "requests_remaining_opportunity": self.rate_limit.get_remaining_for_opportunity(),
+                "requests_remaining_session": self.rate_limit.get_remaining_for_session(),
+                "max_per_opportunity": self.rate_limit.max_requests_per_opportunity,
+                "max_per_session": self.rate_limit.max_requests_per_session,
+                "requests_used_opportunity": self.rate_limit.requests_used_current_opportunity,
+                "requests_used_session": self.rate_limit.requests_used_session,
+                "warning": f"Opportunity budget: {self.rate_limit.get_remaining_for_opportunity()}/{self.rate_limit.max_requests_per_opportunity} remaining!"
             },
             "search_capabilities": self.github_capabilities or {
                 "available_search_types": ["repositories", "code"],
@@ -167,9 +186,9 @@ class LLMSearchStrategist:
                 "requirements": purpose.reasoning.solution_requirements if purpose.reasoning else []
             },
             "api_constraints": {
-                "requests_remaining": self.rate_limit.max_requests_per_session - self.rate_limit.requests_used,
-                "analysis_budget": min(5, self.rate_limit.max_requests_per_session - self.rate_limit.requests_used - 2),  # Save 2 for buffer
-                "warning": f"Only {self.rate_limit.max_requests_per_session - self.rate_limit.requests_used} API requests remaining!"
+                "requests_remaining": self.rate_limit.get_remaining_for_session(),
+                "analysis_budget": min(5, self.rate_limit.get_remaining_for_session() - 2),  # Save 2 for buffer
+                "warning": f"Only {self.rate_limit.get_remaining_for_session()} API requests remaining!"
             }
         }
         
@@ -193,24 +212,31 @@ class LLMSearchStrategist:
     def track_api_usage(self, requests_used: int) -> bool:
         """Track API usage and check if we can continue"""
         
-        self.rate_limit.requests_used += requests_used
+        self.rate_limit.requests_used_session += requests_used
+        self.rate_limit.requests_used_current_opportunity += requests_used
         self.rate_limit.last_request_time = datetime.now()
         
-        remaining = self.rate_limit.max_requests_per_session - self.rate_limit.requests_used
+        remaining_opportunity = self.rate_limit.get_remaining_for_opportunity()
+        remaining_session = self.rate_limit.get_remaining_for_session()
         
-        if remaining <= 0:
-            self.logger.warning("API rate limit reached for this session")
+        if remaining_opportunity <= 0:
+            self.logger.warning(f"API rate limit reached for current opportunity: {self.rate_limit.requests_used_current_opportunity}/{self.rate_limit.max_requests_per_opportunity}")
             return False
-        elif remaining <= 3:
-            self.logger.warning(f"API rate limit nearly reached: {remaining} requests remaining")
+        elif remaining_session <= 0:
+            self.logger.warning(f"API rate limit reached for session: {self.rate_limit.requests_used_session}/{self.rate_limit.max_requests_per_session}")
+            return False
+        elif remaining_opportunity <= 2:
+            self.logger.warning(f"Opportunity API limit nearly reached: {remaining_opportunity} requests remaining")
         
         return True
     
     def can_make_request(self, estimated_requests: int = 1) -> bool:
         """Check if we can make the requested number of API calls"""
         
-        remaining = self.rate_limit.max_requests_per_session - self.rate_limit.requests_used
-        return remaining >= estimated_requests
+        remaining_opportunity = self.rate_limit.get_remaining_for_opportunity()
+        remaining_session = self.rate_limit.get_remaining_for_session()
+        
+        return remaining_opportunity >= estimated_requests and remaining_session >= estimated_requests
     
     def _create_search_strategy_prompt(self, context: SearchContext) -> str:
         """Create comprehensive LLM prompt for search strategy"""
@@ -223,9 +249,10 @@ OPPORTUNITY ANALYSIS:
 {self._format_opportunity_context(llm_context["opportunity_context"])}
 
 API CONSTRAINTS (CRITICAL):
-- Requests Remaining: {llm_context["api_constraints"]["requests_remaining"]} out of {llm_context["api_constraints"]["max_total_requests"]}
-- Already Used: {llm_context["api_constraints"]["requests_used"]} requests
-- ⚠️  BE STRATEGIC: Each search query costs 1 API request!
+- Opportunity Budget: {llm_context["api_constraints"]["requests_remaining_opportunity"]} out of {llm_context["api_constraints"]["max_per_opportunity"]} remaining
+- Session Budget: {llm_context["api_constraints"]["requests_remaining_session"]} out of {llm_context["api_constraints"]["max_per_session"]} remaining
+- Used This Opportunity: {llm_context["api_constraints"]["requests_used_opportunity"]} requests
+- ⚠️  BE STRATEGIC: Each search query costs 1 API request from your {llm_context["api_constraints"]["max_per_opportunity"]}-request opportunity budget!
 
 SEARCH CAPABILITIES:
 {self._format_search_capabilities(llm_context["search_capabilities"])}
